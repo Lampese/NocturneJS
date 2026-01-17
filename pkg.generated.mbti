@@ -1,0 +1,40 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Lampese/nocturnejs"
+
+import(
+  "Lampese/nocturnejs/runtime"
+  "Lampese/nocturnejs/value"
+)
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Engine {
+  runtime : @runtime.Vm
+}
+pub fn Engine::async_done_count(Self) -> Int
+pub fn Engine::error_name(Self, @value.Value) -> String?
+pub fn Engine::eval(Self, String) -> @value.Value raise
+pub fn Engine::eval_result(Self, String) -> Result[@value.Value, @value.Value] raise
+pub fn Engine::eval_result_with_path(Self, String, String) -> Result[@value.Value, @value.Value] raise
+pub fn Engine::eval_result_with_path_mode(Self, String, String, Bool, Bool) -> Result[@value.Value, @value.Value] raise
+pub fn Engine::eval_with_path(Self, String, String) -> @value.Value raise
+pub fn Engine::eval_with_path_mode(Self, String, String, Bool, Bool) -> @value.Value raise
+pub fn Engine::format_error(Self, @value.Value) -> String
+pub fn Engine::new() -> Self
+pub fn Engine::reset_runtime_state(Self) -> Unit
+pub fn Engine::run_gc(Self) -> Unit
+pub fn Engine::set_can_block(Self, Bool) -> Unit
+pub fn Engine::set_gc_debug(Self, Bool) -> Unit
+pub fn Engine::set_gc_threshold(Self, Int) -> Unit
+pub fn Engine::take_print_log(Self) -> Array[String]
+pub fn Engine::value_to_string(Self, @value.Value) -> String
+pub impl Show for Engine
+
+// Type aliases
+pub using @value {type Value}
+
+// Traits
+

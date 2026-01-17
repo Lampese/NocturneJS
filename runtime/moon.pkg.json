@@ -1,0 +1,8 @@
+{
+  "import": [
+    "Lampese/nocturnejs/engine",
+    "moonbitlang/x/fs",
+    "moonbitlang/x/path",
+    "moonbitlang/x/json5"
+  ]
+}

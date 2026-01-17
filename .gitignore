@@ -1,0 +1,9 @@
+tmp/
+target
+_build/
+Agents.md
+.DS_Store
+.mooncakes
+ROADMAP.md
+TEST_MAP.md
+test262-config/test262_report.txt

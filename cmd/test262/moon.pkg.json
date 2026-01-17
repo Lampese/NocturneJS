@@ -1,0 +1,15 @@
+{
+  "is-main": true,
+  "import": [
+    "moonbitlang/x/fs",
+    "moonbitlang/x/path",
+    {
+      "path": "Lampese/nocturnejs",
+      "alias": "qjs"
+    },
+    {
+      "path": "Lampese/nocturnejs/runtime",
+      "alias": "runtime"
+    }
+  ]
+}

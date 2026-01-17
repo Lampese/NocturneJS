@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Lampese/nocturnejs/cmd/test262"
+
+// Values
+
+// Errors
+
+// Types and methods
+type ConfigSection
+
+type RunnerConfig
+
+type TestMeta
+
+type TestMode
+pub impl Eq for TestMode
+
+type TestOutcome
+
+// Type aliases
+
+// Traits
+

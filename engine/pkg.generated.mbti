@@ -1,0 +1,460 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Lampese/nocturnejs/engine"
+
+// Values
+pub fn contains_module_syntax(String) -> Bool
+
+pub fn cook_template_raw(String) -> String?
+
+pub fn parse(String) -> Script raise
+
+pub fn parse_with_mode(String, Bool, Bool) -> Script raise
+
+pub fn parse_with_mode_private(String, Bool, Bool, Array[String]) -> Script raise
+
+pub fn scan_regexp_from(Array[Char], Int) -> (String, Int)?
+
+pub fn script_contains_arguments(Script) -> Bool
+
+pub fn tokenize(String) -> Array[Token]
+
+pub fn tokenize_with_options(String, Bool) -> Array[Token]
+
+pub fn unicode_is_ident_continue(Int) -> Bool
+
+pub fn unicode_is_ident_start(Int) -> Bool
+
+// Errors
+pub(all) suberror ParseError {
+  At(offset~ : Int, message~ : String)
+}
+pub impl Eq for ParseError
+pub impl Show for ParseError
+pub impl ToJson for ParseError
+
+// Types and methods
+pub enum ArrayPatternElem {
+  Bind(VarBinding, Expr?)
+  Rest(VarBinding)
+  Hole
+}
+pub impl Eq for ArrayPatternElem
+pub impl Show for ArrayPatternElem
+pub impl ToJson for ArrayPatternElem
+
+pub enum BinaryOp {
+  Add
+  Sub
+  Mul
+  Div
+  Mod
+  Pow
+  Shl
+  Sar
+  Shr
+  Lt
+  Lte
+  Gt
+  Gte
+  In
+  Instanceof
+  Eq
+  Neq
+  StrictEq
+  StrictNeq
+  BitAnd
+  BitXor
+  BitOr
+  LogicalAnd
+  LogicalOr
+  Coalesce
+}
+pub impl Eq for BinaryOp
+pub impl Show for BinaryOp
+pub impl ToJson for BinaryOp
+
+pub struct CatchClause {
+  name : String?
+  body : Stmt
+}
+pub impl Eq for CatchClause
+pub impl Show for CatchClause
+pub impl ToJson for CatchClause
+
+pub enum ChainSegment {
+  Member(MemberKey, Bool, Int)
+  Call(Array[Expr], Bool, Int)
+}
+pub impl Eq for ChainSegment
+pub impl Show for ChainSegment
+pub impl ToJson for ChainSegment
+
+pub struct ClassDef {
+  name : String?
+  super_class : Expr?
+  body : Array[ClassMember]
+  offset : Int
+  end_offset : Int
+}
+pub impl Eq for ClassDef
+pub impl Show for ClassDef
+pub impl ToJson for ClassDef
+
+pub enum ClassMember {
+  Method(ObjKey, FunctionDef, Bool)
+  Getter(ObjKey, FunctionDef, Bool)
+  Setter(ObjKey, FunctionDef, Bool)
+  Field(ObjKey, Expr?, Bool)
+  StaticBlock(Array[Stmt])
+}
+pub impl Eq for ClassMember
+pub impl Show for ClassMember
+pub impl ToJson for ClassMember
+
+pub enum Expr {
+  Number(Double, Bool, Int)
+  Bool(Bool)
+  Null
+  String(String, Bool, Bool)
+  TemplateLiteral(TemplateParts, Array[Expr])
+  TaggedTemplate(Expr, TemplateParts, Array[Expr])
+  Regexp(String, String, Int)
+  BigInt(String)
+  Ident(String, Int)
+  This
+  Super
+  Yield(Expr?, Bool)
+  Await(Expr, Int)
+  Unary(UnaryOp, Expr, Int)
+  Update(UpdateOp, Expr, UpdateKind, Int)
+  NewTarget(Int)
+  ImportMeta(Int)
+  New(Expr, Array[Expr])
+  Binary(BinaryOp, Expr, Expr, Int)
+  PrivateIn(String, Expr, Int)
+  Conditional(Expr, Expr, Expr)
+  Sequence(Array[Expr])
+  Paren(Expr)
+  Assign(String, Expr, Int, Bool)
+  AssignInvalid(Expr, Expr, Int)
+  AssignArray(Array[ArrayPatternElem], Expr)
+  AssignObject(Array[ObjectPatternElem], Expr)
+  AssignOp(BinaryOp, Expr, Expr, Int)
+  AssignMember(Expr, MemberKey, Expr, Int)
+  Call(Expr, Array[Expr], Int)
+  Member(Expr, MemberKey, Int)
+  OptionalChain(Expr, Array[ChainSegment])
+  FunctionExpr(FunctionDef)
+  ClassExpr(ClassDef)
+  ObjectLiteral(Array[ObjectProp])
+  ArrayLiteral(Array[Expr?])
+  Spread(Expr)
+}
+pub impl Eq for Expr
+pub impl Show for Expr
+pub impl ToJson for Expr
+
+pub enum ForInit {
+  None
+  Var(VarKind, Array[(VarBinding, Expr?)])
+  Expr(Expr)
+}
+pub impl Eq for ForInit
+pub impl Show for ForInit
+pub impl ToJson for ForInit
+
+pub struct FunctionDef {
+  name : String?
+  params : Array[ParamBinding]
+  param_inits : Array[Expr?]
+  body : Array[Stmt]
+  is_strict : Bool
+  is_generator : Bool
+  is_async : Bool
+  is_arrow : Bool
+  offset : Int
+  end_offset : Int
+}
+pub fn FunctionDef::new(String?, Array[ParamBinding], Array[Expr?], Array[Stmt], Bool, Bool, Bool, Bool, Int, Int) -> Self
+pub impl Eq for FunctionDef
+pub impl Show for FunctionDef
+pub impl ToJson for FunctionDef
+
+type LexDeclKind
+pub impl Eq for LexDeclKind
+pub impl Show for LexDeclKind
+
+pub struct Lexer {
+  source : String
+  chars : Array[Char]
+}
+pub fn Lexer::new(String) -> Self
+pub impl Show for Lexer
+
+pub enum MemberKey {
+  Ident(String)
+  Private(String)
+  Computed(Expr)
+}
+pub impl Eq for MemberKey
+pub impl Show for MemberKey
+pub impl ToJson for MemberKey
+
+pub enum ObjKey {
+  Ident(String)
+  Private(String)
+  String(String)
+  Number(Double)
+  Computed(Expr)
+}
+pub impl Eq for ObjKey
+pub impl Show for ObjKey
+pub impl ToJson for ObjKey
+
+pub enum ObjectPatternElem {
+  Bind(ObjKey, VarBinding, Expr?)
+  Rest(VarBinding)
+}
+pub impl Eq for ObjectPatternElem
+pub impl Show for ObjectPatternElem
+pub impl ToJson for ObjectPatternElem
+
+pub enum ObjectProp {
+  KeyValue(ObjKey, Expr)
+  Method(ObjKey, FunctionDef)
+  Shorthand(String)
+  Getter(ObjKey, FunctionDef)
+  Setter(ObjKey, FunctionDef)
+  Spread(Expr)
+}
+pub impl Eq for ObjectProp
+pub impl Show for ObjectProp
+pub impl ToJson for ObjectProp
+
+pub struct ParamBinding {
+  binding : VarBinding
+  is_rest : Bool
+}
+pub impl Eq for ParamBinding
+pub impl Show for ParamBinding
+pub impl ToJson for ParamBinding
+
+pub struct Script {
+  body : Array[Stmt]
+  is_strict : Bool
+  is_module : Bool
+  source : String
+}
+pub fn Script::empty() -> Self
+pub impl Eq for Script
+pub impl Show for Script
+pub impl ToJson for Script
+
+pub enum Stmt {
+  Empty
+  ExprStmt(Expr)
+  VarDecl(VarKind, Array[(VarBinding, Expr?)])
+  Block(Array[Stmt])
+  Label(String, Stmt)
+  FunctionDecl(FunctionDef)
+  ClassDecl(ClassDef)
+  Return(Expr?)
+  If(Expr, Stmt, Stmt?)
+  With(Expr, Stmt)
+  While(Expr, Stmt)
+  For(ForInit, Expr?, Expr?, Stmt)
+  ForIn(ForInit, Expr, Stmt)
+  ForOf(ForInit, Expr, Stmt)
+  ForAwaitOf(ForInit, Expr, Stmt)
+  DoWhile(Stmt, Expr)
+  Switch(Expr, Array[SwitchCase])
+  Throw(Expr)
+  Try(Stmt, CatchClause?, Stmt?)
+  Break(String?)
+  Continue(String?)
+}
+pub impl Eq for Stmt
+pub impl Show for Stmt
+pub impl ToJson for Stmt
+
+pub enum SwitchCase {
+  Case(Expr, Array[Stmt])
+  Default(Array[Stmt])
+}
+pub impl Eq for SwitchCase
+pub impl Show for SwitchCase
+pub impl ToJson for SwitchCase
+
+pub struct TemplateParts {
+  cooked : Array[String?]
+  raw : Array[String]
+  site_id : Int
+}
+pub impl Eq for TemplateParts
+pub impl Show for TemplateParts
+pub impl ToJson for TemplateParts
+
+pub struct Token {
+  kind : TokenKind
+  lexeme : String
+  raw_lexeme : String?
+  offset : Int
+  line_break_before : Bool
+}
+pub fn Token::eof(Int, Bool) -> Self
+pub impl Eq for Token
+pub impl Show for Token
+pub impl ToJson for Token
+
+pub enum TokenKind {
+  Number
+  String
+  Template
+  TemplateHead
+  TemplateMiddle
+  TemplateTail
+  Ident
+  Regexp
+  MulAssign
+  DivAssign
+  ModAssign
+  PlusAssign
+  MinusAssign
+  ShlAssign
+  SarAssign
+  ShrAssign
+  AndAssign
+  XorAssign
+  OrAssign
+  PowAssign
+  LandAssign
+  LorAssign
+  DoubleQuestionMarkAssign
+  Dec
+  Inc
+  Shl
+  Sar
+  Shr
+  Lt
+  Lte
+  Gt
+  Gte
+  Eq
+  StrictEq
+  Neq
+  StrictNeq
+  Land
+  Lor
+  Pow
+  Arrow
+  Ellipsis
+  DoubleQuestionMark
+  QuestionMarkDot
+  Error
+  PrivateName
+  Eof
+  KeywordNull
+  KeywordFalse
+  KeywordTrue
+  KeywordIf
+  KeywordElse
+  KeywordReturn
+  KeywordVar
+  KeywordThis
+  KeywordDelete
+  KeywordVoid
+  KeywordTypeof
+  KeywordNew
+  KeywordIn
+  KeywordInstanceof
+  KeywordDo
+  KeywordWhile
+  KeywordFor
+  KeywordBreak
+  KeywordContinue
+  KeywordSwitch
+  KeywordCase
+  KeywordDefault
+  KeywordThrow
+  KeywordTry
+  KeywordCatch
+  KeywordFinally
+  KeywordFunction
+  KeywordDebugger
+  KeywordWith
+  KeywordClass
+  KeywordConst
+  KeywordEnum
+  KeywordExport
+  KeywordExtends
+  KeywordImport
+  KeywordSuper
+  KeywordImplements
+  KeywordInterface
+  KeywordLet
+  KeywordPackage
+  KeywordPrivate
+  KeywordProtected
+  KeywordPublic
+  KeywordStatic
+  KeywordYield
+  KeywordAwait
+  KeywordOf
+  Punct(Char)
+}
+pub impl Eq for TokenKind
+pub impl Show for TokenKind
+pub impl ToJson for TokenKind
+
+pub enum UnaryOp {
+  Plus
+  Minus
+  BitNot
+  Not
+  Typeof
+  Void
+  Delete
+}
+pub impl Eq for UnaryOp
+pub impl Show for UnaryOp
+pub impl ToJson for UnaryOp
+
+pub enum UpdateKind {
+  Prefix
+  Postfix
+}
+pub impl Eq for UpdateKind
+pub impl Show for UpdateKind
+pub impl ToJson for UpdateKind
+
+pub enum UpdateOp {
+  Inc
+  Dec
+}
+pub impl Eq for UpdateOp
+pub impl Show for UpdateOp
+pub impl ToJson for UpdateOp
+
+pub enum VarBinding {
+  Name(String)
+  ArrayPattern(Array[ArrayPatternElem])
+  ObjectPattern(Array[ObjectPatternElem])
+  Target(Expr)
+}
+pub impl Eq for VarBinding
+pub impl Show for VarBinding
+pub impl ToJson for VarBinding
+
+pub enum VarKind {
+  Var
+  Let
+  ConstDecl
+}
+pub impl Eq for VarKind
+pub impl Show for VarKind
+pub impl ToJson for VarKind
+
+// Type aliases
+
+// Traits
+

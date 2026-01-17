@@ -1,0 +1,79 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Lampese/nocturnejs/value"
+
+import(
+  "Lampese/nocturnejs/runtime"
+  "moonbitlang/core/bigint"
+)
+
+// Values
+pub fn error_name(Value) -> String?
+
+pub fn format_error(Value) -> String
+
+pub fn value_arguments(@runtime.ArgumentsValue) -> Value
+
+pub fn value_array(@runtime.ArrayValue) -> Value
+
+pub fn value_bigint(@bigint.BigInt) -> Value
+
+pub fn value_bool(Bool) -> Value
+
+pub fn value_bound_function(@runtime.BoundFunctionValue) -> Value
+
+pub fn value_builtin(@runtime.BuiltinValue) -> Value
+
+pub fn value_function(@runtime.FunctionValue) -> Value
+
+pub fn value_null() -> Value
+
+pub fn value_number(Double) -> Value
+
+pub fn value_object(@runtime.ObjectValue) -> Value
+
+pub fn value_string(String) -> Value
+
+pub fn value_symbol(@runtime.SymbolValue) -> Value
+
+pub fn value_to_string(Value) -> String
+
+pub fn value_undefined() -> Value
+
+// Errors
+
+// Types and methods
+pub enum Value {
+  Undefined
+  Null
+  Bool(Bool)
+  Number(Double)
+  String(String)
+  BigInt(@bigint.BigInt)
+  Symbol(@runtime.SymbolValue)
+  Builtin(@runtime.BuiltinValue)
+  Function(@runtime.FunctionValue)
+  BoundFunction(@runtime.BoundFunctionValue)
+  Object(@runtime.ObjectValue)
+  Array(@runtime.ArrayValue)
+  Arguments(@runtime.ArgumentsValue)
+}
+pub impl Show for Value
+pub impl ToJson for Value
+
+// Type aliases
+pub using @runtime {type ArgumentsValue}
+
+pub using @runtime {type ArrayValue}
+
+pub using @runtime {type BoundFunctionValue}
+
+pub using @runtime {type BuiltinValue}
+
+pub using @runtime {type FunctionValue}
+
+pub using @runtime {type ObjectValue}
+
+pub using @runtime {type SymbolValue}
+
+// Traits
+

@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Lampese/nocturnejs/host"
+
+import(
+  "Lampese/nocturnejs/runtime"
+)
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Host {
+}
+pub fn Host::install(Self, @runtime.Vm) -> @runtime.Vm
+pub fn Host::new() -> Self
+pub impl Show for Host
+
+// Type aliases
+
+// Traits
+

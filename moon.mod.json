@@ -1,0 +1,13 @@
+{
+  "name": "Lampese/nocturnejs",
+  "version": "0.0.1",
+  "deps": {
+    "moonbitlang/async": "0.15.0",
+    "moonbitlang/x": "0.4.38"
+  },
+  "preferred-target": "native",
+  "readme": "README.md",
+  "repository": "https://github.com/Lampese/NocturneJS",
+  "keywords": ["JavaScript", "Engine", "MoonBit"],
+  "description": "A small, spec-compliant JavaScript engine written in MoonBit, inspired by QuickJS"
+}
