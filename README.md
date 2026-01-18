@@ -68,7 +68,7 @@ moon run --target native --release cmd/test262 -- -c test262-config/test262.conf
     <td>
       <img src="assets/test262-qjs.svg" width="600" height="16" alt="QuickJS test262: 43,606 passed, 52 failed, 5,767 skipped">
     </td>
-    <td>pass 43,606 (88.23%)  fail 52 (0.11%)  skipped 5,767 (11.67%)</td>
+    <td>pass 43,606 (88.23%)  fail 52 (0.11%)  skipped 5,767 (11.67%)  excluded 2,567 (not shown)</td>
   </tr>
 </table>
 
