@@ -1,0 +1,224 @@
+///|
+fn init_std_object(object_proto_obj : ObjectValue) -> Value {
+  let std_obj = new_object_value_with_proto(Some(Object(object_proto_obj)))
+  match std_obj {
+    Object(obj) => {
+      obj.props.set(
+        "sprintf",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::StdSprintf)),
+      )
+      obj.props.set(
+        "loadScript",
+        property_data_non_enum(
+          new_builtin_value(BuiltinFunction::StdLoadScript),
+        ),
+      )
+      obj.props.set(
+        "tmpfile",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::StdTmpfile)),
+      )
+      obj.props.set(
+        "open",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::StdOpen)),
+      )
+      obj.props.set(
+        "loadFile",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::StdLoadFile)),
+      )
+      obj.props.set(
+        "popen",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::StdPopen)),
+      )
+      obj.props.set(
+        "parseExtJSON",
+        property_data_non_enum(
+          new_builtin_value(BuiltinFunction::StdParseExtJSON),
+        ),
+      )
+      obj.props.set(
+        "fdopen",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::StdFdopen)),
+      )
+      obj.props.set(
+        "gc",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::StdGc)),
+      )
+      obj.props.set(
+        "SEEK_SET",
+        property_data_non_enum(Number(Double::from_int(seek_set))),
+      )
+      obj.props.set(
+        "SEEK_CUR",
+        property_data_non_enum(Number(Double::from_int(seek_cur))),
+      )
+      obj.props.set(
+        "SEEK_END",
+        property_data_non_enum(Number(Double::from_int(seek_end))),
+      )
+    }
+    _ => ()
+  }
+  std_obj
+}
+
+///|
+fn init_os_object(object_proto_obj : ObjectValue) -> Value {
+  let os_obj = new_object_value_with_proto(Some(Object(object_proto_obj)))
+  match os_obj {
+    Object(obj) => {
+      obj.props.set(
+        "setTimeout",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsSetTimeout)),
+      )
+      obj.props.set(
+        "clearTimeout",
+        property_data_non_enum(
+          new_builtin_value(BuiltinFunction::OsClearTimeout),
+        ),
+      )
+      obj.props.set(
+        "Worker",
+        property_data_non_enum(
+          new_builtin_value(BuiltinFunction::WorkerConstructor),
+        ),
+      )
+      obj.props.set(
+        "open",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsOpen)),
+      )
+      obj.props.set(
+        "close",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsClose)),
+      )
+      obj.props.set(
+        "read",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsRead)),
+      )
+      obj.props.set(
+        "write",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsWrite)),
+      )
+      obj.props.set(
+        "seek",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsSeek)),
+      )
+      obj.props.set(
+        "readdir",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsReaddir)),
+      )
+      obj.props.set(
+        "stat",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsStat)),
+      )
+      obj.props.set(
+        "lstat",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsLstat)),
+      )
+      obj.props.set(
+        "readlink",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsReadlink)),
+      )
+      obj.props.set(
+        "symlink",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsSymlink)),
+      )
+      obj.props.set(
+        "mkdir",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsMkdir)),
+      )
+      obj.props.set(
+        "remove",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsRemove)),
+      )
+      obj.props.set(
+        "utimes",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsUtimes)),
+      )
+      obj.props.set(
+        "getcwd",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsGetcwd)),
+      )
+      obj.props.set(
+        "realpath",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsRealpath)),
+      )
+      obj.props.set(
+        "isatty",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsIsatty)),
+      )
+      obj.props.set(
+        "exec",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsExec)),
+      )
+      obj.props.set(
+        "pipe",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsPipe)),
+      )
+      obj.props.set(
+        "waitpid",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsWaitpid)),
+      )
+      obj.props.set(
+        "kill",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::OsKill)),
+      )
+      obj.props.set(
+        "O_RDONLY",
+        property_data_non_enum(Number(Double::from_int(os_flag_rdonly))),
+      )
+      obj.props.set(
+        "O_WRONLY",
+        property_data_non_enum(Number(Double::from_int(os_flag_wronly))),
+      )
+      obj.props.set(
+        "O_RDWR",
+        property_data_non_enum(Number(Double::from_int(os_flag_rdwr))),
+      )
+      obj.props.set(
+        "O_CREAT",
+        property_data_non_enum(Number(Double::from_int(os_flag_creat))),
+      )
+      obj.props.set(
+        "O_TRUNC",
+        property_data_non_enum(Number(Double::from_int(os_flag_trunc))),
+      )
+      obj.props.set(
+        "S_IFMT",
+        property_data_non_enum(Number(Double::from_int(os_mode_ifmt))),
+      )
+      obj.props.set(
+        "S_IFREG",
+        property_data_non_enum(Number(Double::from_int(os_mode_ifreg))),
+      )
+      obj.props.set(
+        "S_IFLNK",
+        property_data_non_enum(Number(Double::from_int(os_mode_iflnk))),
+      )
+      obj.props.set(
+        "SIGTERM",
+        property_data_non_enum(Number(Double::from_int(os_sigterm))),
+      )
+    }
+    _ => ()
+  }
+  os_obj
+}
+
+///|
+fn init_bjson_object(object_proto_obj : ObjectValue) -> Value {
+  let bjson_obj = new_object_value_with_proto(Some(Object(object_proto_obj)))
+  match bjson_obj {
+    Object(obj) => {
+      obj.props.set(
+        "read",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::BjsonRead)),
+      )
+      obj.props.set(
+        "write",
+        property_data_non_enum(new_builtin_value(BuiltinFunction::BjsonWrite)),
+      )
+    }
+    _ => ()
+  }
+  bjson_obj
+}
