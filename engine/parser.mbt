@@ -4599,6 +4599,10 @@ fn parse_assignment(tokens : Array[Token], index : Int) -> (Expr, Int) raise {
   }
   match assign_op {
     Some(op) => {
+      let is_logical_assign = match op {
+        BinaryOp::LogicalAnd | BinaryOp::LogicalOr | BinaryOp::Coalesce => true
+        _ => false
+      }
       let mut target = lhs
       let mut keep_unwrap = true
       while keep_unwrap {
@@ -4613,7 +4617,9 @@ fn parse_assignment(tokens : Array[Token], index : Int) -> (Expr, Int) raise {
           return (AssignOp(op, lhs, rhs, tok.offset), next_i)
         }
         _ =>
-          if !strict_context() && is_call_assignment_target(target) {
+          if !is_logical_assign &&
+            !strict_context() &&
+            is_call_assignment_target(target) {
             let (rhs, next_i) = parse_assignment(tokens, i + 1)
             return (AssignOp(op, lhs, rhs, tok.offset), next_i)
           } else {
@@ -6418,6 +6424,7 @@ fn is_simple_assignment_target(expr : Expr) -> Bool {
 ///|
 fn is_call_assignment_target(expr : Expr) -> Bool {
   match expr {
+    Call(Ident(name, _), _, _) => name != "__import_dynamic"
     Call(_, _, _) => true
     Paren(inner) => is_call_assignment_target(inner)
     _ => false

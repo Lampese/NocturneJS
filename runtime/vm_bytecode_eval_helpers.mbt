@@ -586,6 +586,7 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
       let var_decl_object_pool = func.var_decl_object_pool
       let declare_binding_pool = func.declare_binding_pool
       let block_env_pool = func.block_env_pool
+      let mut gc_tick = 0
       let pop_envs = fn() {
         while !env_stack.is_empty() {
           let _ = env_stack.pop()
@@ -596,6 +597,10 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
       let mut finally_body_depth = 0
       let result = try {
       while pc < code.length() {
+        gc_tick = gc_tick + 1
+        if Int::land(gc_tick, 255) == 0 {
+          gc_maybe_collect()
+        }
         let instr = code[pc]
         pc = pc + 1
         try {
@@ -986,10 +991,15 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
               let argv = build_arg_list(args_value)
               stack.push(bytecode_call_direct_eval(env, callee, argv, this_value))
             }
+            BytecodeOp::SuperCall => {
+              let super_ctor = resolve_super_constructor()
+              stack.push(super_ctor)
+            }
             BytecodeOp::SuperCallArgs => {
               let args_value = bytecode_stack_pop(stack)
+              let super_ctor = bytecode_stack_pop(stack)
               let argv = build_arg_list(args_value)
-              stack.push(super_call_with_args(env, argv))
+              stack.push(super_call_with_ctor(env, super_ctor, argv))
             }
             BytecodeOp::ArrayPush => {
               let value = bytecode_stack_pop(stack)
@@ -1614,7 +1624,8 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
               }
             BytecodeOp::SuperCall =>
               {
-                let _ = throw_type_error("invalid bytecode super call")
+                let super_ctor = resolve_super_constructor()
+                stack.push(super_ctor)
               }
             BytecodeOp::SuperUpdate =>
               if index >= 0 && index < super_update_pool.length() {
@@ -2630,6 +2641,7 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
   let try_stack = state.try_stack
   let env_stack = state.env_stack
   let mut env = state.env
+  let mut gc_tick = 0
   let pop_envs = fn() {
     bytecode_exec_pop_envs(env_stack)
   }
@@ -2647,6 +2659,10 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
   }
   let result = try {
     while pc < code.length() || resume_throw is Some(_) || resume_return is Some(_) {
+      gc_tick = gc_tick + 1
+      if Int::land(gc_tick, 255) == 0 {
+        gc_maybe_collect()
+      }
       match resume_return {
         Some(value) => {
           resume_return = None
@@ -3084,10 +3100,15 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
                 let argv = build_arg_list(args_value)
                 stack.push(bytecode_call_direct_eval(env, callee, argv, this_value))
               }
+              BytecodeOp::SuperCall => {
+                let super_ctor = resolve_super_constructor()
+                stack.push(super_ctor)
+              }
               BytecodeOp::SuperCallArgs => {
                 let args_value = bytecode_stack_pop(stack)
+                let super_ctor = bytecode_stack_pop(stack)
                 let argv = build_arg_list(args_value)
-                stack.push(super_call_with_args(env, argv))
+                stack.push(super_call_with_ctor(env, super_ctor, argv))
               }
               BytecodeOp::ArrayPush => {
                 let value = bytecode_stack_pop(stack)
@@ -3938,7 +3959,8 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
                 }
               BytecodeOp::SuperCall =>
                 {
-                  let _ = throw_type_error("invalid bytecode super call")
+                  let super_ctor = resolve_super_constructor()
+                  stack.push(super_ctor)
                 }
               BytecodeOp::SuperUpdate =>
                 if index >= 0 && index < super_update_pool.length() {

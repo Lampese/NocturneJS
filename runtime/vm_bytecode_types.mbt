@@ -610,7 +610,8 @@ fn bytecode_emit(builder : BytecodeBuilder, instr : BytecodeInstr) -> Unit {
         | BytecodeOp::NewObject
         | BytecodeOp::PushTryLast
         | BytecodeOp::GetFinallyCode
-        | BytecodeOp::PushFinallyValue =>
+        | BytecodeOp::PushFinallyValue
+        | BytecodeOp::SuperCall =>
           bytecode_adjust_stack(builder, 1)
         BytecodeOp::Pop => bytecode_adjust_stack(builder, -1)
         BytecodeOp::Dup => bytecode_adjust_stack(builder, 1)
@@ -638,6 +639,7 @@ fn bytecode_emit(builder : BytecodeBuilder, instr : BytecodeInstr) -> Unit {
         BytecodeOp::CallWithThisArgs
         | BytecodeOp::CallWithThisEvalArgs =>
           bytecode_adjust_stack(builder, -2)
+        BytecodeOp::SuperCallArgs => bytecode_adjust_stack(builder, -1)
         BytecodeOp::UpdateElemPrefixInc
         | BytecodeOp::UpdateElemPrefixDec
         | BytecodeOp::UpdateElemPostfixInc

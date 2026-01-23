@@ -151,10 +151,19 @@ fn bytecode_emit_expr(
           Super => {
             match key {
               @engine.MemberKey::Computed(expr) =>
-                if !bytecode_emit_expr(builder, expr) {
-                  return false
-                } else {
-                  bytecode_emit(builder, BytecodeInstr::Op(BytecodeOp::SuperGetElem))
+                {
+                  bytecode_emit(
+                    builder,
+                    BytecodeInstr::Op(BytecodeOp::CheckSuperThis),
+                  )
+                  if !bytecode_emit_expr(builder, expr) {
+                    return false
+                  } else {
+                    bytecode_emit(
+                      builder,
+                      BytecodeInstr::Op(BytecodeOp::SuperGetElem),
+                    )
+                  }
                 }
               _ => {
                 let idx = bytecode_add_super_member(builder, key)
@@ -471,10 +480,19 @@ fn bytecode_emit_expr(
           Super => {
             match key {
               @engine.MemberKey::Computed(expr) =>
-                if !bytecode_emit_expr(builder, expr) {
-                  return false
-                } else {
-                  bytecode_emit(builder, BytecodeInstr::Op(BytecodeOp::SuperGetElem))
+                {
+                  bytecode_emit(
+                    builder,
+                    BytecodeInstr::Op(BytecodeOp::CheckSuperThis),
+                  )
+                  if !bytecode_emit_expr(builder, expr) {
+                    return false
+                  } else {
+                    bytecode_emit(
+                      builder,
+                      BytecodeInstr::Op(BytecodeOp::SuperGetElem),
+                    )
+                  }
                 }
               _ => {
                 let idx = bytecode_add_super_member(builder, key)
@@ -1608,6 +1626,10 @@ fn bytecode_emit_expr(
                   true
                 }
                 @engine.MemberKey::Computed(expr) => {
+                  bytecode_emit(
+                    builder,
+                    BytecodeInstr::Op(BytecodeOp::CheckSuperThis),
+                  )
                   if !bytecode_emit_expr(builder, expr) {
                     return false
                   }
@@ -2221,11 +2243,20 @@ fn bytecode_emit_expr(
         Super => {
           match key {
             @engine.MemberKey::Computed(expr) =>
-              if !bytecode_emit_expr(builder, expr) {
-                false
-              } else {
-                bytecode_emit(builder, BytecodeInstr::Op(BytecodeOp::SuperGetElem))
-                true
+              {
+                bytecode_emit(
+                  builder,
+                  BytecodeInstr::Op(BytecodeOp::CheckSuperThis),
+                )
+                if !bytecode_emit_expr(builder, expr) {
+                  false
+                } else {
+                  bytecode_emit(
+                    builder,
+                    BytecodeInstr::Op(BytecodeOp::SuperGetElem),
+                  )
+                  true
+                }
               }
             _ => {
               let idx = bytecode_add_super_member(builder, key)
@@ -2277,6 +2308,7 @@ fn bytecode_emit_expr(
     Call(callee, args, _) =>
       match unwrap_paren(callee) {
         @engine.Expr::Super => {
+          bytecode_emit(builder, BytecodeInstr::Op(BytecodeOp::SuperCall))
           if !bytecode_emit_args_array(builder, args) {
             return false
           }
@@ -2351,8 +2383,14 @@ fn bytecode_emit_expr(
               let idx = bytecode_add_super_member_call(builder, key, args)
               match key {
                 @engine.MemberKey::Computed(expr) =>
-                  if !bytecode_emit_expr(builder, expr) {
-                    return false
+                  {
+                    bytecode_emit(
+                      builder,
+                      BytecodeInstr::Op(BytecodeOp::CheckSuperThis),
+                    )
+                    if !bytecode_emit_expr(builder, expr) {
+                      return false
+                    }
                   }
                 _ => ()
               }
