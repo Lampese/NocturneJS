@@ -54,8 +54,23 @@ fn promise_ctor_env_id(env : Env) -> Int {
 fn register_promise_ctor_for_env(env : Env, ctor : BuiltinValue) -> Unit {
   let realm_id = promise_ctor_env_id(env)
   promise_ctor_env_ref.update(fn(table) {
+    match table.get(realm_id) {
+      Some(existing) => rc_decref_value(Builtin(existing))
+      None => ()
+    }
+    rc_incref_value(Builtin(ctor))
     table.set(realm_id, ctor)
     table
+  })
+}
+
+///|
+fn promise_ctor_env_clear() -> Unit {
+  promise_ctor_env_ref.update(fn(table) {
+    for _, ctor in table {
+      rc_decref_value(Builtin(ctor))
+    }
+    Map::new()
   })
 }
 

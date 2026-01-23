@@ -27,7 +27,7 @@ fn eval_module_script(
     None => Env::new(None)
   }
   module_env.strict = true
-  module_env.bindings.set("this", Undefined)
+  env_bindings_set(module_env, "this", Undefined)
   module_env.var_env = Some(module_env)
   module_env_exports_set(module_env.id, exports_obj)
   module_env_set(module_env)

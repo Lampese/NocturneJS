@@ -536,12 +536,12 @@ fn object_define_accessor(
   match desc {
     Object(desc_obj) => {
       if is_setter {
-        desc_obj.props.set("set", property_data(func_value))
+        props_set(desc_obj.props, "set", property_data(func_value))
       } else {
-        desc_obj.props.set("get", property_data(func_value))
+        props_set(desc_obj.props, "get", property_data(func_value))
       }
-      desc_obj.props.set("enumerable", property_data(Bool(true)))
-      desc_obj.props.set("configurable", property_data(Bool(true)))
+      props_set(desc_obj.props, "enumerable", property_data(Bool(true)))
+      props_set(desc_obj.props, "configurable", property_data(Bool(true)))
     }
     _ => ()
   }

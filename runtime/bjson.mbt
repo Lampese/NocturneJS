@@ -615,7 +615,7 @@ fn bjson_fill_object(
                   match pair[0] {
                     Json::String(key) => {
                       let val = bjson_decode_node(pair[1], refs, use_refs)
-                      obj.props.set(key, property_data(val))
+                      props_set(obj.props, key, property_data(val))
                     }
                     _ => ()
                   }
@@ -644,10 +644,11 @@ fn bjson_fill_array(
           while i < items.length() && i < arr.elements.length() {
             match bjson_parse_tag(items[i]) {
               Some((tag, _)) if tag == "hole" => ()
-              _ =>
-                arr.elements[i] = Some(
-                  bjson_decode_node(items[i], refs, use_refs),
-                )
+              _ => {
+                let decoded = bjson_decode_node(items[i], refs, use_refs)
+                rc_replace_optional_value(arr.elements[i], Some(decoded))
+                arr.elements[i] = Some(decoded)
+              }
             }
             i = i + 1
           }

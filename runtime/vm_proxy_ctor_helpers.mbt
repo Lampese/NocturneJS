@@ -42,6 +42,8 @@ fn new_proxy_value(target : Value, handler : Value) -> Value raise {
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_value(target)
+  rc_incref_value(handler)
   Object(obj)
 }
 
@@ -49,7 +51,7 @@ fn new_proxy_value(target : Value, handler : Value) -> Value raise {
 fn new_proxy_revoke_function(proxy : Value) -> Value {
   match new_builtin_value_with_this(BuiltinFunction::ProxyRevoke, proxy) {
     Builtin(builtin) => {
-      builtin.props.set("name", property_data_readonly(String("")))
+      props_set(builtin.props, "name", property_data_readonly(String("")))
       Builtin(builtin)
     }
     value => value

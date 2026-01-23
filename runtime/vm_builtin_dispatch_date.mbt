@@ -390,7 +390,10 @@ fn call_builtin_date(
       let value = if args.is_empty() {
         to_number(Undefined)
       } else {
-        to_number(args[0])
+        match args[0] {
+          Number(num) => num
+          _ => to_number(args[0])
+        }
       }
       let new_ms = date_time_clip(value)
       obj.date_data = Some(new_ms)

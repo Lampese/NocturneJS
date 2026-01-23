@@ -3,14 +3,14 @@ fn init_function_ctor(function_proto_value : Value) -> Value {
   let function_ctor = new_builtin_value(BuiltinFunction::FunctionConstructor)
   match function_ctor {
     Builtin(builtin) =>
-      builtin.props.set("prototype", property_data_const(function_proto_value))
+      props_set(builtin.props, "prototype", property_data_const(function_proto_value))
     _ => ()
   }
   match function_proto_value {
     Function(func) =>
-      func.props.set("constructor", property_data_non_enum(function_ctor))
+      props_set(func.props, "constructor", property_data_non_enum(function_ctor))
     Builtin(builtin) =>
-      builtin.props.set("constructor", property_data_non_enum(function_ctor))
+      props_set(builtin.props, "constructor", property_data_non_enum(function_ctor))
     _ => ()
   }
   function_ctor
@@ -28,15 +28,16 @@ fn init_generator_family_ctors(
   )
   match generator_function_ctor {
     Builtin(builtin) => {
+      rc_replace_optional_value(builtin.proto, Some(function_ctor))
       builtin.proto = Some(function_ctor)
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(Object(generator_function_proto_obj)),
       )
     }
     _ => ()
   }
-  generator_function_proto_obj.props.set(
+  props_set(generator_function_proto_obj.props, 
     "constructor",
     property_data_readonly(generator_function_ctor),
   )
@@ -45,15 +46,16 @@ fn init_generator_family_ctors(
   )
   match async_generator_function_ctor {
     Builtin(builtin) => {
+      rc_replace_optional_value(builtin.proto, Some(function_ctor))
       builtin.proto = Some(function_ctor)
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(Object(async_generator_function_proto_obj)),
       )
     }
     _ => ()
   }
-  async_generator_function_proto_obj.props.set(
+  props_set(async_generator_function_proto_obj.props, 
     "constructor",
     property_data_readonly(async_generator_function_ctor),
   )
@@ -62,15 +64,16 @@ fn init_generator_family_ctors(
   )
   match async_function_ctor {
     Builtin(builtin) => {
+      rc_replace_optional_value(builtin.proto, Some(function_ctor))
       builtin.proto = Some(function_ctor)
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(Object(async_function_proto_obj)),
       )
     }
     _ => ()
   }
-  async_function_proto_obj.props.set(
+  props_set(async_function_proto_obj.props, 
     "constructor",
     property_data_readonly(async_function_ctor),
   )

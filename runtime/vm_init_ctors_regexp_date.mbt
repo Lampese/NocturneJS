@@ -10,8 +10,8 @@ fn init_regexp_date_ctors(
   let regexp_ctor = new_builtin_value(BuiltinFunction::RegExpConstructor)
   match regexp_ctor {
     Builtin(builtin) => {
-      builtin.props.set("prototype", property_data_const(regexp_proto_value))
-      builtin.props.set(
+      props_set(builtin.props, "prototype", property_data_const(regexp_proto_value))
+      props_set(builtin.props, 
         "escape",
         property_data_non_enum(new_builtin_value(BuiltinFunction::RegExpEscape)),
       )
@@ -25,28 +25,28 @@ fn init_regexp_date_ctors(
     }
     _ => ()
   }
-  regexp_proto_obj.props.set("constructor", property_data_non_enum(regexp_ctor))
+  props_set(regexp_proto_obj.props, "constructor", property_data_non_enum(regexp_ctor))
   let date_ctor = new_builtin_value(BuiltinFunction::DateConstructor)
   match date_ctor {
     Builtin(builtin) => {
-      builtin.props.set("prototype", property_data_const(date_proto_value))
-      builtin.props.set(
+      props_set(builtin.props, "prototype", property_data_const(date_proto_value))
+      props_set(builtin.props, 
         "parse",
         property_data_non_enum(new_builtin_value(BuiltinFunction::DateParse)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "UTC",
         property_data_non_enum(new_builtin_value(BuiltinFunction::DateUTC)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "now",
         property_data_non_enum(new_builtin_value(BuiltinFunction::DateNow)),
       )
     }
     _ => ()
   }
-  date_proto_obj.props.set("constructor", property_data_non_enum(date_ctor))
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, "constructor", property_data_non_enum(date_ctor))
+  props_set(date_proto_obj.props, 
     to_primitive_key,
     property_data_readonly(
       new_builtin_value(BuiltinFunction::DateSymbolToPrimitive),

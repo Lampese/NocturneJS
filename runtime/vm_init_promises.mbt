@@ -10,21 +10,21 @@ fn init_promise_proto(object_proto_obj : ObjectValue) -> (ObjectValue, Value) {
   set_proto_ref(promise_proto_ref, Some(promise_proto_obj))
   match symbol_to_string_tag_key() {
     Some(key) =>
-      promise_proto_obj.props.set(
+      props_set(promise_proto_obj.props, 
         key,
         property_data_readonly(String("Promise")),
       )
     None => ()
   }
-  promise_proto_obj.props.set(
+  props_set(promise_proto_obj.props, 
     "then",
     property_data_non_enum(new_builtin_value(BuiltinFunction::PromiseThen)),
   )
-  promise_proto_obj.props.set(
+  props_set(promise_proto_obj.props, 
     "catch",
     property_data_non_enum(new_builtin_value(BuiltinFunction::PromiseCatch)),
   )
-  promise_proto_obj.props.set(
+  props_set(promise_proto_obj.props, 
     "finally",
     property_data_non_enum(new_builtin_value(BuiltinFunction::PromiseFinally)),
   )

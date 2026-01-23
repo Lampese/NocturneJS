@@ -35,7 +35,7 @@ fn gc_remove_weak_objects(state : GcState) -> Unit {
             i = i + 1
           } else {
             gc_decref_value(state, value)
-            let _ = data.entries.remove(i)
+            weakmap_remove_index(data, i)
 
           }
         }
@@ -96,6 +96,7 @@ fn gc_remove_weak_objects(state : GcState) -> Unit {
             gc_incref_env(state, realm_env)
             let _ = data.entries.remove(i)
             gc_decref_value(state, entry.held_value)
+            rc_decref_value(entry.held_value)
           } else {
             i = i + 1
           }
@@ -292,6 +293,7 @@ fn gc_free_cycles(state : GcState) -> Unit {
         Some(meta) =>
           if meta.in_tmp {
             gc_release_value(value)
+            rc_meta_remove(id)
             false
           } else {
             true
@@ -304,6 +306,7 @@ fn gc_free_cycles(state : GcState) -> Unit {
         Some(meta) =>
           if meta.in_tmp {
             gc_release_env(env)
+            rc_meta_remove(id)
             false
           } else {
             true

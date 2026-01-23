@@ -8,42 +8,42 @@ fn init_promise_proxy_ctors(
   let promise_ctor = new_builtin_value(BuiltinFunction::PromiseConstructor)
   match promise_ctor {
     Builtin(builtin) => {
-      builtin.props.set("prototype", property_data_const(promise_proto_value))
-      builtin.props.set(
+      props_set(builtin.props, "prototype", property_data_const(promise_proto_value))
+      props_set(builtin.props, 
         "resolve",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::PromiseResolve),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "reject",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::PromiseReject),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "all",
         property_data_non_enum(new_builtin_value(BuiltinFunction::PromiseAll)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "allSettled",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::PromiseAllSettled),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "any",
         property_data_non_enum(new_builtin_value(BuiltinFunction::PromiseAny)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "race",
         property_data_non_enum(new_builtin_value(BuiltinFunction::PromiseRace)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "try",
         property_data_non_enum(new_builtin_value(BuiltinFunction::PromiseTry)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "withResolvers",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::PromiseWithResolvers),
@@ -59,7 +59,7 @@ fn init_promise_proxy_ctors(
     }
     _ => ()
   }
-  promise_proto_obj.props.set(
+  props_set(promise_proto_obj.props, 
     "constructor",
     property_data_non_enum(promise_ctor),
   )
@@ -70,7 +70,7 @@ fn init_promise_proxy_ctors(
   let proxy_ctor = new_builtin_value(BuiltinFunction::ProxyConstructor)
   match proxy_ctor {
     Builtin(builtin) =>
-      builtin.props.set(
+      props_set(builtin.props, 
         "revocable",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ProxyRevocable),

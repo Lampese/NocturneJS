@@ -53,6 +53,13 @@ fn call_builtin_collection(
       let (_, data) = require_map(builtin.this_value)
       let mut index = 0
       while index < data.entries.length() {
+        match data.entries[index] {
+          Some((key, value)) => {
+            rc_decref_value(key)
+            rc_decref_value(value)
+          }
+          None => ()
+        }
         data.entries[index] = None
         index = index + 1
       }
@@ -124,6 +131,10 @@ fn call_builtin_collection(
       let (_, data) = require_set(builtin.this_value)
       let mut index = 0
       while index < data.entries.length() {
+        match data.entries[index] {
+          Some(entry) => rc_decref_value(entry)
+          None => ()
+        }
         data.entries[index] = None
         index = index + 1
       }

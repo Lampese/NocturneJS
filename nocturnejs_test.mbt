@@ -144,6 +144,45 @@ test "eval try finally" {
 }
 
 ///|
+test "eval try finally break continue" {
+  let engine = @nocturnejs.Engine::new()
+  let result = try? engine.eval(
+    "var log = \"\"; for (var i = 0; i < 3; i = i + 1) { try { if (i == 1) break; log = log + \"t\"; } finally { log = log + \"f\"; } } log",
+  )
+  match result {
+    Ok(Value::String(value)) => inspect(value, content="tff")
+    Ok(other) => fail("unexpected value: \{other}")
+    Err(_) => fail("eval failed")
+  }
+  let result2 = try? engine.eval(
+    "var log = \"\"; for (var i = 0; i < 3; i = i + 1) { try { if (i == 1) continue; log = log + \"t\"; } finally { log = log + \"f\"; } } log",
+  )
+  match result2 {
+    Ok(Value::String(value)) => inspect(value, content="tfftf")
+    Ok(other) => fail("unexpected value: \{other}")
+    Err(_) => fail("eval failed")
+  }
+}
+
+///|
+test "eval try finally throw" {
+  let engine = @nocturnejs.Engine::new()
+  let result = try? engine.eval(
+    "var x = 0; try { throw 1; } finally { x = 2; } x",
+  )
+  match result {
+    Ok(_) => fail("expected error")
+    Err(_) => ()
+  }
+  let result2 = try? engine.eval("x")
+  match result2 {
+    Ok(Value::Number(value)) => inspect(value, content="2")
+    Ok(other) => fail("unexpected value: \{other}")
+    Err(_) => fail("eval failed")
+  }
+}
+
+///|
 test "eval typeof void delete" {
   let engine = @nocturnejs.Engine::new()
   let result = try? engine.eval(

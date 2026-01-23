@@ -1,6 +1,24 @@
 ///|
 
 ///|
+fn env_bindings_set(env : Env, name : String, value : Value) -> Unit {
+  match env.bindings.get(name) {
+    Some(existing) => rc_replace_value(existing, value)
+    None => rc_incref_value(value)
+  }
+  env.bindings.set(name, value)
+}
+
+///|
+fn env_bindings_remove(env : Env, name : String) -> Unit {
+  match env.bindings.get(name) {
+    Some(existing) => rc_decref_value(existing)
+    None => ()
+  }
+  let _ = env.bindings.remove(name)
+}
+
+///|
 fn is_unscopable(obj : Value, name : String) -> Bool raise {
   match symbol_unscopables_key() {
     Some(key) =>
@@ -20,6 +38,7 @@ fn is_unscopable(obj : Value, name : String) -> Bool raise {
 ///|
 priv enum BindingTarget {
   WithObject(Value)
+  VarObject(Value)
   Env(Env)
   Unbound
 }
@@ -35,11 +54,19 @@ fn resolve_binding_target(env : Env, name : String) -> BindingTarget raise {
   }
   match env.bindings.get(name) {
     Some(_) => BindingTarget::Env(env)
-    None =>
+    None => {
+      match env.var_object {
+        Some(obj) =>
+          if has_property_value(obj, name) {
+            return BindingTarget::VarObject(obj)
+          }
+        None => ()
+      }
       match env.parent {
         Some(parent) => resolve_binding_target(parent, name)
         None => BindingTarget::Unbound
       }
+    }
   }
 }
 
@@ -67,6 +94,14 @@ fn get_binding_value_from_target(
 ) -> Value raise {
   match target {
     BindingTarget::WithObject(obj) =>
+      if has_property_value(obj, name) {
+        property_get(obj, name)
+      } else if strict {
+        throw_reference_error("undefined variable")
+      } else {
+        Undefined
+      }
+    BindingTarget::VarObject(obj) =>
       if has_property_value(obj, name) {
         property_get(obj, name)
       } else if strict {
@@ -103,6 +138,17 @@ fn assign_binding_value_to_target(
 ) -> Unit raise {
   match target {
     BindingTarget::WithObject(obj) =>
+      if has_property_value(obj, name) {
+        let _ = property_set(obj, name, value, strict)
+
+      } else if strict {
+        let _ = throw_reference_error("undefined variable")
+
+      } else {
+        let _ = property_set(obj, name, value, false)
+
+      }
+    BindingTarget::VarObject(obj) =>
       if has_property_value(obj, name) {
         let _ = property_set(obj, name, value, strict)
 
@@ -208,7 +254,7 @@ fn var_env_for(env : Env) -> Env {
 fn merge_arg_env_bindings(arg_env : Env, var_env : Env) -> Unit {
   for name, value in arg_env.bindings {
     if var_env.bindings.get(name) is None {
-      var_env.bindings.set(name, value)
+      env_bindings_set(var_env, name, value)
       if arg_env.deletable_bindings.get(name) is Some(_) {
         var_env.deletable_bindings.set(name, true)
       }
@@ -225,22 +271,22 @@ fn env_declare(env : Env, name : String, value : Value) -> Unit {
     Some(_) =>
       match env.parent {
         Some(parent) => env_declare(parent, name, value)
-        None => env.bindings.set(name, value)
+        None => env_bindings_set(env, name, value)
       }
     None =>
       match env.parent {
         Some(_) =>
           match env.bindings.get(name) {
             Some(_) => ()
-            None => env.bindings.set(name, value)
+            None => env_bindings_set(env, name, value)
           }
         None =>
           match global_object(env) {
             Some(obj) =>
               if !obj.props.contains(name) {
-                obj.props.set(name, property_data_non_enum(value))
+                props_set(obj.props, name, property_data_non_enum(value))
               }
-            None => env.bindings.set(name, value)
+            None => env_bindings_set(env, name, value)
           }
       }
   }
@@ -330,10 +376,10 @@ fn global_create_var_binding(
             let _ = throw_type_error("cannot define property")
 
           } else {
-            obj.props.set(name, property_data_global(Undefined, configurable))
+            props_set(obj.props, name, property_data_global(Undefined, configurable))
           }
       }
-    None => env.bindings.set(name, Undefined)
+    None => env_bindings_set(env, name, Undefined)
   }
 }
 
@@ -349,12 +395,12 @@ fn global_create_function_binding(
       match obj.props.get(name) {
         Some(prop) =>
           if prop.configurable {
-            obj.props.set(name, property_data_global(value, configurable))
+            props_set(obj.props, name, property_data_global(value, configurable))
           } else if !is_data_property(prop) {
             let _ = throw_type_error("cannot redefine property")
 
           } else {
-            obj.props.set(name, Property::{
+            props_set(obj.props, name, Property::{
               value,
               writable: prop.writable,
               configurable: prop.configurable,
@@ -368,10 +414,10 @@ fn global_create_function_binding(
             let _ = throw_type_error("cannot define property")
 
           } else {
-            obj.props.set(name, property_data_global(value, configurable))
+            props_set(obj.props, name, property_data_global(value, configurable))
           }
       }
-    None => env.bindings.set(name, value)
+    None => env_bindings_set(env, name, value)
   }
 }
 
@@ -386,7 +432,7 @@ fn env_declare_var(env : Env, name : String, configurable : Bool) -> Unit raise 
             let _ = throw_type_error("cannot define property")
 
           } else {
-            obj.props.set(name, property_data_global(Undefined, configurable))
+            props_set(obj.props, name, property_data_global(Undefined, configurable))
           }
       }
       return
@@ -400,7 +446,7 @@ fn env_declare_var(env : Env, name : String, configurable : Bool) -> Unit raise 
         Some(parent) => env_declare_var(parent, name, configurable)
         None =>
           if env.bindings.get(name) is None {
-            env.bindings.set(name, Undefined)
+            env_bindings_set(env, name, Undefined)
             if configurable {
               env.deletable_bindings.set(name, true)
             }
@@ -412,7 +458,7 @@ fn env_declare_var(env : Env, name : String, configurable : Bool) -> Unit raise 
           match env.bindings.get(name) {
             Some(_) => ()
             None => {
-              env.bindings.set(name, Undefined)
+              env_bindings_set(env, name, Undefined)
               if configurable {
                 env.deletable_bindings.set(name, true)
               }
@@ -442,7 +488,7 @@ fn env_set_local_or_var_object(
             let _ = throw_type_error("cannot define property")
 
           } else {
-            obj.props.set(name, property_data_global(value, configurable))
+            props_set(obj.props, name, property_data_global(value, configurable))
           }
       }
     Some(_) => ()
@@ -452,7 +498,7 @@ fn env_set_local_or_var_object(
 
 ///|
 fn env_declare_uninitialized(env : Env, name : String) -> Unit {
-  env.bindings.set(name, Undefined)
+  env_bindings_set(env, name, Undefined)
   env.uninitialized_bindings.set(name, true)
 }
 
@@ -463,7 +509,7 @@ fn env_define_readonly(
   value : Value,
   always_throw : Bool,
 ) -> Unit {
-  env.bindings.set(name, value)
+  env_bindings_set(env, name, value)
   env.uninitialized_bindings.remove(name)
   env.readonly_bindings.set(name, always_throw)
   update_module_export_binding(env, name, value)
@@ -473,7 +519,7 @@ fn env_define_readonly(
 ///|
 fn env_initialize_binding(env : Env, name : String, value : Value) -> Unit {
   env.uninitialized_bindings.remove(name)
-  env.bindings.set(name, value)
+  env_bindings_set(env, name, value)
   update_module_export_binding(env, name, value)
   sync_module_env(env)
 }
@@ -489,7 +535,7 @@ fn env_set_local(env : Env, name : String, value : Value) -> Unit raise {
             let _ = throw_reference_error("undefined variable")
             return
           }
-          env.bindings.set(name, value)
+          env_bindings_set(env, name, value)
           update_module_export_binding(env, name, value)
         }
       }
@@ -500,7 +546,7 @@ fn env_set_local(env : Env, name : String, value : Value) -> Unit raise {
             let _ = throw_reference_error("undefined variable")
             return
           }
-          env.bindings.set(name, value)
+          env_bindings_set(env, name, value)
           update_module_export_binding(env, name, value)
         }
         None =>
@@ -518,7 +564,7 @@ fn env_set_local(env : Env, name : String, value : Value) -> Unit raise {
               )
 
             }
-            None => env.bindings.set(name, value)
+            None => env_bindings_set(env, name, value)
           }
       }
   }
@@ -559,7 +605,7 @@ fn env_set_with_strict(
             ()
           }
         None => {
-          env.bindings.set(name, value)
+          env_bindings_set(env, name, value)
           update_module_export_binding(env, name, value)
         }
       }
@@ -580,7 +626,7 @@ fn env_set_with_strict(
                 let _ = property_set(Value::Object(obj), name, value, false)
 
               }
-            None => env.bindings.set(name, value)
+            None => env_bindings_set(env, name, value)
           }
       }
   }
@@ -608,7 +654,7 @@ fn env_set_with_strict_no_with(
             ()
           }
         None => {
-          env.bindings.set(name, value)
+          env_bindings_set(env, name, value)
           update_module_export_binding(env, name, value)
         }
       }
@@ -629,7 +675,7 @@ fn env_set_with_strict_no_with(
                 let _ = property_set(Value::Object(obj), name, value, false)
 
               }
-            None => env.bindings.set(name, value)
+            None => env_bindings_set(env, name, value)
           }
       }
   }

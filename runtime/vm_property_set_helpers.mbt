@@ -18,7 +18,7 @@ fn set_property_in(
           }
         None =>
           if prop.writable {
-            props.set(name, Property::{
+            props_set(props, name, Property::{
               value,
               writable: prop.writable,
               configurable: prop.configurable,
@@ -32,7 +32,7 @@ fn set_property_in(
           }
       }
     None => {
-      props.set(name, property_data(value))
+      props_set(props, name, property_data(value))
       true
     }
   }
@@ -86,7 +86,7 @@ fn set_property_with_proto(
               } else {
                 let desc_obj = new_object_value()
                 match desc_obj {
-                  Object(obj) => obj.props.set("value", property_data(value))
+                  Object(obj) => props_set(obj.props, "value", property_data(value))
                   _ => ()
                 }
                 define_property_value(

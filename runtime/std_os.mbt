@@ -19,7 +19,6 @@ priv struct FileState {
 priv struct PipeState {
   buffer : Array[Byte]
   mut read_pos : Int
-  mut closed_read : Bool
   mut closed_write : Bool
 }
 
@@ -33,8 +32,6 @@ priv struct FdHandle {
 ///|
 priv struct ProcessInfo {
   mut status : Int?
-  mut running : Bool
-  stdout_fd : Int?
 }
 
 ///|
@@ -188,7 +185,6 @@ fn pipe_handle_pair() -> (Int, Int) {
   let state = PipeState::{
     buffer: [],
     read_pos: 0,
-    closed_read: false,
     closed_write: false,
   }
   let read_fd = alloc_fd(FdHandle::{
@@ -300,7 +296,6 @@ fn file_read_line(file : FileState) -> String? {
 
 ///|
 fn pipe_read_bytes(pipe : PipeState, len : Int) -> Array[Byte] {
-  let _ = pipe.closed_read
   let available = pipe.buffer.length() - pipe.read_pos
   if available <= 0 {
     return []
@@ -519,7 +514,7 @@ fn fd_close(fd : Int) -> Int {
           }
         FdKind::PipeRead =>
           match handle.pipe {
-            Some(pipe) => pipe.closed_read = true
+            Some(_) => ()
             None => ()
           }
         FdKind::PipeWrite =>
@@ -615,9 +610,7 @@ fn set_process(pid : Int, proc : ProcessInfo?) -> Unit {
 }
 
 ///|
-fn spawn_process(status : Int?, running : Bool, stdout_fd : Int?) -> Int {
-  let proc = ProcessInfo::{ status, running, stdout_fd }
-  let _ = proc.running
-  let _ = proc.stdout_fd
+fn spawn_process(status : Int?) -> Int {
+  let proc = ProcessInfo::{ status }
   alloc_pid(proc)
 }

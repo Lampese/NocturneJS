@@ -4,7 +4,16 @@ fn gen_eval_yield_star(
   expr : @engine.Expr,
   k : (Value) -> GenStep raise,
 ) -> GenStep raise {
+  let target = unwrap_paren(expr)
   gen_eval_expr_cont(env, expr, fn(value) raise {
+    match target {
+      @engine.Expr::Ident(name, _) =>
+        if !env_has(env, name) {
+          let _ = throw_reference_error("undefined variable")
+          return Done(Throw(Undefined))
+        }
+      _ => ()
+    }
     gen_with_root_frame(fn() raise {
       let is_async = match current_function() {
         Some(func) => func.is_async

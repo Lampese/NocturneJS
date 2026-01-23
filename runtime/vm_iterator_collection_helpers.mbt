@@ -4,13 +4,15 @@ fn new_map_iterator(data : MapData, kind : Int) -> Value {
     value_from_object(map_iterator_proto()),
   )
   match iter_value {
-    Object(obj) =>
+    Object(obj) => {
+      rc_incref_map_entries(data.entries)
       obj.map_iter_data = Some(MapIteratorData::{
         entries: data.entries,
         index: 0,
         kind,
         done: false,
       })
+    }
     _ => ()
   }
   iter_value
@@ -22,13 +24,15 @@ fn new_set_iterator(data : SetData, kind : Int) -> Value {
     value_from_object(set_iterator_proto()),
   )
   match iter_value {
-    Object(obj) =>
+    Object(obj) => {
+      rc_incref_optional_values(data.entries)
       obj.set_iter_data = Some(SetIteratorData::{
         entries: data.entries,
         index: 0,
         kind,
         done: false,
       })
+    }
     _ => ()
   }
   iter_value

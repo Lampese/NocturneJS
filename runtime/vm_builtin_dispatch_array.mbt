@@ -157,52 +157,56 @@ fn call_builtin_array(
     BuiltinFunction::ArrayConcat =>
       match builtin.this_value {
         Some(this_value) => {
-          let obj = to_object(this_value)
-          let result = array_species_create(obj, 0)
-          let max_safe = 9007199254740991L
-          let mut n = 0L
-          let mut i = -1
-          while i < args.length() {
-            let element = if i < 0 { obj } else { args[i] }
-            if is_concat_spreadable(element) {
-              let len = array_like_length_int64(element)
-              if n + len > max_safe {
-                return throw_type_error("Array too long")
-              }
-              let mut k = 0L
-              while k < len {
-                let key = Int64::to_string(k)
-                if has_property_value(element, key) {
-                  let value = property_get(element, key)
-                  create_data_property_or_throw(
-                    result,
-                    Int64::to_string(n),
-                    value,
-                  )
+          with_gc_frame(fn() raise {
+            let obj = to_object(this_value)
+            let _ = gc_root_push(obj)
+            let result = array_species_create(obj, 0)
+            let _ = gc_root_push(result)
+            let max_safe = 9007199254740991L
+            let mut n = 0L
+            let mut i = -1
+            while i < args.length() {
+              let element = if i < 0 { obj } else { args[i] }
+              if is_concat_spreadable(element) {
+                let len = array_like_length_int64(element)
+                if n + len > max_safe {
+                  return throw_type_error("Array too long")
                 }
+                let mut k = 0L
+                while k < len {
+                  let key = Int64::to_string(k)
+                  if has_property_value(element, key) {
+                    let value = property_get(element, key)
+                    create_data_property_or_throw(
+                      result,
+                      Int64::to_string(n),
+                      value,
+                    )
+                  }
+                  n = n + 1L
+                  k = k + 1L
+                }
+              } else {
+                if n >= max_safe {
+                  return throw_type_error("Array too long")
+                }
+                create_data_property_or_throw(
+                  result,
+                  Int64::to_string(n),
+                  element,
+                )
                 n = n + 1L
-                k = k + 1L
               }
-            } else {
-              if n >= max_safe {
-                return throw_type_error("Array too long")
-              }
-              create_data_property_or_throw(
-                result,
-                Int64::to_string(n),
-                element,
-              )
-              n = n + 1L
+              i = i + 1
             }
-            i = i + 1
-          }
-          let _ = property_set(
-            result,
-            "length",
-            Number(Int64::to_double(n)),
-            true,
-          )
-          result
+            let _ = property_set(
+              result,
+              "length",
+              Number(Int64::to_double(n)),
+              true,
+            )
+            result
+          })
         }
         None => new_array_value([])
       }

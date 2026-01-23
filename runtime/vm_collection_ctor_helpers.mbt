@@ -38,6 +38,7 @@ fn new_map_value_with_proto(proto : Value?) -> Value {
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(final_proto)
   Object(obj)
 }
 
@@ -81,6 +82,7 @@ fn new_set_value_with_proto(proto : Value?) -> Value {
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(final_proto)
   Object(obj)
 }
 
@@ -115,7 +117,7 @@ fn new_weakmap_value_with_proto(proto : Value?) -> Value {
     iterator_wrap_data: None,
     iterator_concat_data: None,
     iterator_helper_data: None,
-    weakmap_data: Some(WeakMapData::{ entries: [] }),
+    weakmap_data: Some(WeakMapData::{ entries: [], index: Map::new() }),
     weakset_data: None,
     weakref_data: None,
     finreg_data: None,
@@ -129,6 +131,7 @@ fn new_weakmap_value_with_proto(proto : Value?) -> Value {
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(final_proto)
   Object(obj)
 }
 
@@ -172,6 +175,7 @@ fn new_weakset_value_with_proto(proto : Value?) -> Value {
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(final_proto)
   Object(obj)
 }
 
@@ -215,6 +219,7 @@ fn new_weakref_value(target : Value, proto : Value?) -> Value {
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto_value)
   Object(obj)
 }
 
@@ -263,5 +268,8 @@ fn new_finreg_value(callback : Value, realm_env : Env, proto : Value?) -> Value 
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto_value)
+  rc_incref_env(realm_root)
+  rc_incref_value(callback)
   Object(obj)
 }

@@ -35,6 +35,7 @@ fn init_string_proto(object_proto_obj : ObjectValue) -> (ObjectValue, Value) {
       immutable_proto: false,
       extensible: true,
     })
+    rc_incref_optional_value(obj.proto)
     Object(obj)
   }
   let string_proto_obj = match string_proto_value {
@@ -42,217 +43,217 @@ fn init_string_proto(object_proto_obj : ObjectValue) -> (ObjectValue, Value) {
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(string_proto_ref, Some(string_proto_obj))
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "charCodeAt",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringCharCodeAt)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "charAt",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringCharAt)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "codePointAt",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::StringCodePointAt),
     ),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "at",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringAt)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "concat",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringConcat)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "substring",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringSubstring)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "substr",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringSubstr)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "slice",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringSlice)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "indexOf",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringIndexOf)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "lastIndexOf",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::StringLastIndexOf),
     ),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "includes",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringIncludes)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "startsWith",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringStartsWith)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "endsWith",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringEndsWith)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "match",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringMatch)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "matchAll",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringMatchAll)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "search",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringSearch)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "split",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringSplit)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "padStart",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringPadStart)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "padEnd",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringPadEnd)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "repeat",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringRepeat)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "replace",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringReplace)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "replaceAll",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringReplaceAll)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "trim",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringTrim)),
   )
   let trim_start = new_builtin_value(BuiltinFunction::StringTrimStart)
   let trim_end = new_builtin_value(BuiltinFunction::StringTrimEnd)
-  string_proto_obj.props.set("trimStart", property_data_non_enum(trim_start))
-  string_proto_obj.props.set("trimEnd", property_data_non_enum(trim_end))
-  string_proto_obj.props.set("trimLeft", property_data_non_enum(trim_start))
-  string_proto_obj.props.set("trimRight", property_data_non_enum(trim_end))
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, "trimStart", property_data_non_enum(trim_start))
+  props_set(string_proto_obj.props, "trimEnd", property_data_non_enum(trim_end))
+  props_set(string_proto_obj.props, "trimLeft", property_data_non_enum(trim_start))
+  props_set(string_proto_obj.props, "trimRight", property_data_non_enum(trim_end))
+  props_set(string_proto_obj.props, 
     "toLowerCase",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::StringToLowerCase),
     ),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "toUpperCase",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::StringToUpperCase),
     ),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "toLocaleLowerCase",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::StringToLocaleLowerCase),
     ),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "toLocaleUpperCase",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::StringToLocaleUpperCase),
     ),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "localeCompare",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::StringLocaleCompare),
     ),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "normalize",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringNormalize)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "isWellFormed",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::StringIsWellFormed),
     ),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "toWellFormed",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::StringToWellFormed),
     ),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "toString",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringToString)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "valueOf",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringValueOf)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "anchor",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringAnchor)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "big",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringBig)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "blink",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringBlink)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "bold",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringBold)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "fixed",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringFixed)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "fontcolor",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringFontcolor)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "fontsize",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringFontsize)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "italics",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringItalics)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "link",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringLink)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "small",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringSmall)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "strike",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringStrike)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "sub",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringSub)),
   )
-  string_proto_obj.props.set(
+  props_set(string_proto_obj.props, 
     "sup",
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringSup)),
   )
   match symbol_iterator_key() {
     Some(key) =>
-      string_proto_obj.props.set(
+      props_set(string_proto_obj.props, 
         key,
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::StringIterator),

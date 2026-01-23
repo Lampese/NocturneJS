@@ -2,7 +2,7 @@
 fn new_message_event(data : Value) -> Value {
   let obj = new_object_value()
   match obj {
-    Object(event) => event.props.set("data", property_data(data))
+    Object(event) => props_set(event.props, "data", property_data(data))
     _ => ()
   }
   obj
@@ -38,19 +38,19 @@ fn new_worker_port_value(worker_id : Int, to_main : Bool) -> Value {
   let obj = new_object_value()
   match obj {
     Object(port) => {
-      port.props.set(
+      props_set(port.props, 
         "__worker_id",
         property_data_non_enum(Number(Double::from_int(worker_id))),
       )
       let port_kind = if to_main { 1.0 } else { 0.0 }
-      port.props.set("__worker_port", property_data_non_enum(Number(port_kind)))
-      port.props.set(
+      props_set(port.props, "__worker_port", property_data_non_enum(Number(port_kind)))
+      props_set(port.props, 
         "postMessage",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::WorkerPostMessage),
         ),
       )
-      port.props.set("onmessage", property_data_non_enum(Null))
+      props_set(port.props, "onmessage", property_data_non_enum(Null))
     }
     _ => ()
   }
@@ -331,7 +331,7 @@ fn clone_worker_value_inner(
                                                   prop.value,
                                                   seen,
                                                 )
-                                                target.props.set(
+                                                props_set(target.props, 
                                                   key,
                                                   property_data(cloned),
                                                 )

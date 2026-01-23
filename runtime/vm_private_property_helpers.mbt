@@ -10,7 +10,7 @@ fn define_private_property(
         let _ = throw_type_error("private class field already exists")
 
       } else {
-        props.set(key, prop)
+        props_set(props, key, prop)
       }
     None => {
       let _ = throw_type_error("invalid private access")
@@ -91,7 +91,7 @@ fn private_property_set(
               }
             }
           } else if prop.writable {
-            props.set(key, Property::{
+            props_set(props, key, Property::{
               value,
               writable: prop.writable,
               configurable: prop.configurable,

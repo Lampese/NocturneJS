@@ -171,9 +171,9 @@ fn declare_host_objects(
 fn set_global_intrinsics(global : Value) -> Unit {
   match global {
     Object(obj) => {
-      obj.props.set("NaN", property_data_const(Number(nan())))
-      obj.props.set("Infinity", property_data_const(Number(inf())))
-      obj.props.set("undefined", property_data_const(Undefined))
+      props_set(obj.props, "NaN", property_data_const(Number(nan())))
+      props_set(obj.props, "Infinity", property_data_const(Number(inf())))
+      props_set(obj.props, "undefined", property_data_const(Undefined))
     }
     _ => ()
   }

@@ -25,52 +25,52 @@ fn init_collection_protos(
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(map_proto_ref, Some(map_proto_obj))
-  map_proto_obj.props.set(
+  props_set(map_proto_obj.props, 
     "get",
     property_data_non_enum(new_builtin_value(BuiltinFunction::MapGet)),
   )
-  map_proto_obj.props.set(
+  props_set(map_proto_obj.props, 
     "getOrInsert",
     property_data_non_enum(new_builtin_value(BuiltinFunction::MapGetOrInsert)),
   )
-  map_proto_obj.props.set(
+  props_set(map_proto_obj.props, 
     "getOrInsertComputed",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::MapGetOrInsertComputed),
     ),
   )
-  map_proto_obj.props.set(
+  props_set(map_proto_obj.props, 
     "set",
     property_data_non_enum(new_builtin_value(BuiltinFunction::MapSet)),
   )
-  map_proto_obj.props.set(
+  props_set(map_proto_obj.props, 
     "has",
     property_data_non_enum(new_builtin_value(BuiltinFunction::MapHas)),
   )
-  map_proto_obj.props.set(
+  props_set(map_proto_obj.props, 
     "delete",
     property_data_non_enum(new_builtin_value(BuiltinFunction::MapDelete)),
   )
-  map_proto_obj.props.set(
+  props_set(map_proto_obj.props, 
     "forEach",
     property_data_non_enum(new_builtin_value(BuiltinFunction::MapForEach)),
   )
-  map_proto_obj.props.set(
+  props_set(map_proto_obj.props, 
     "clear",
     property_data_non_enum(new_builtin_value(BuiltinFunction::MapClear)),
   )
   let map_keys_func = new_builtin_value(BuiltinFunction::MapKeys)
   let map_values_func = new_builtin_value(BuiltinFunction::MapValues)
   let map_entries_func = new_builtin_value(BuiltinFunction::MapEntries)
-  map_proto_obj.props.set("keys", property_data_non_enum(map_keys_func))
-  map_proto_obj.props.set("values", property_data_non_enum(map_values_func))
-  map_proto_obj.props.set("entries", property_data_non_enum(map_entries_func))
+  props_set(map_proto_obj.props, "keys", property_data_non_enum(map_keys_func))
+  props_set(map_proto_obj.props, "values", property_data_non_enum(map_values_func))
+  props_set(map_proto_obj.props, "entries", property_data_non_enum(map_entries_func))
   match symbol_iterator_key() {
     Some(key) =>
-      map_proto_obj.props.set(key, property_data_non_enum(map_entries_func))
+      props_set(map_proto_obj.props, key, property_data_non_enum(map_entries_func))
     None => ()
   }
-  map_proto_obj.props.set("size", Property::{
+  props_set(map_proto_obj.props, "size", Property::{
     value: Undefined,
     writable: false,
     configurable: true,
@@ -86,69 +86,69 @@ fn init_collection_protos(
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(set_proto_ref_cell, Some(set_proto_obj))
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "add",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetAdd)),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "has",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetHas)),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "delete",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetDelete)),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "clear",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetClear)),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "forEach",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetForEach)),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "isDisjointFrom",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::SetIsDisjointFrom),
     ),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "isSubsetOf",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetIsSubsetOf)),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "isSupersetOf",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetIsSupersetOf)),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "intersection",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetIntersection)),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "difference",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetDifference)),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "symmetricDifference",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::SetSymmetricDifference),
     ),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     "union",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetUnion)),
   )
   let set_values_func = new_builtin_value(BuiltinFunction::SetValues)
   let set_entries_func = new_builtin_value(BuiltinFunction::SetEntries)
-  set_proto_obj.props.set("values", property_data_non_enum(set_values_func))
-  set_proto_obj.props.set("keys", property_data_non_enum(set_values_func))
-  set_proto_obj.props.set("entries", property_data_non_enum(set_entries_func))
+  props_set(set_proto_obj.props, "values", property_data_non_enum(set_values_func))
+  props_set(set_proto_obj.props, "keys", property_data_non_enum(set_values_func))
+  props_set(set_proto_obj.props, "entries", property_data_non_enum(set_entries_func))
   match symbol_iterator_key() {
     Some(key) =>
-      set_proto_obj.props.set(key, property_data_non_enum(set_values_func))
+      props_set(set_proto_obj.props, key, property_data_non_enum(set_values_func))
     None => ()
   }
-  set_proto_obj.props.set("size", Property::{
+  props_set(set_proto_obj.props, "size", Property::{
     value: Undefined,
     writable: false,
     configurable: true,
@@ -164,31 +164,31 @@ fn init_collection_protos(
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(weakmap_proto_ref, Some(weakmap_proto_obj))
-  weakmap_proto_obj.props.set(
+  props_set(weakmap_proto_obj.props, 
     "get",
     property_data_non_enum(new_builtin_value(BuiltinFunction::WeakMapGet)),
   )
-  weakmap_proto_obj.props.set(
+  props_set(weakmap_proto_obj.props, 
     "getOrInsert",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::WeakMapGetOrInsert),
     ),
   )
-  weakmap_proto_obj.props.set(
+  props_set(weakmap_proto_obj.props, 
     "getOrInsertComputed",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::WeakMapGetOrInsertComputed),
     ),
   )
-  weakmap_proto_obj.props.set(
+  props_set(weakmap_proto_obj.props, 
     "set",
     property_data_non_enum(new_builtin_value(BuiltinFunction::WeakMapSet)),
   )
-  weakmap_proto_obj.props.set(
+  props_set(weakmap_proto_obj.props, 
     "has",
     property_data_non_enum(new_builtin_value(BuiltinFunction::WeakMapHas)),
   )
-  weakmap_proto_obj.props.set(
+  props_set(weakmap_proto_obj.props, 
     "delete",
     property_data_non_enum(new_builtin_value(BuiltinFunction::WeakMapDelete)),
   )
@@ -200,15 +200,15 @@ fn init_collection_protos(
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(weakset_proto_ref_cell, Some(weakset_proto_obj))
-  weakset_proto_obj.props.set(
+  props_set(weakset_proto_obj.props, 
     "add",
     property_data_non_enum(new_builtin_value(BuiltinFunction::WeakSetAdd)),
   )
-  weakset_proto_obj.props.set(
+  props_set(weakset_proto_obj.props, 
     "has",
     property_data_non_enum(new_builtin_value(BuiltinFunction::WeakSetHas)),
   )
-  weakset_proto_obj.props.set(
+  props_set(weakset_proto_obj.props, 
     "delete",
     property_data_non_enum(new_builtin_value(BuiltinFunction::WeakSetDelete)),
   )
@@ -220,13 +220,13 @@ fn init_collection_protos(
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(weakref_proto_ref, Some(weakref_proto_obj))
-  weakref_proto_obj.props.set(
+  props_set(weakref_proto_obj.props, 
     "deref",
     property_data_non_enum(new_builtin_value(BuiltinFunction::WeakRefDeref)),
   )
   match symbol_to_string_tag_key() {
     Some(key) =>
-      weakref_proto_obj.props.set(
+      props_set(weakref_proto_obj.props, 
         key,
         property_data_readonly(String("WeakRef")),
       )
@@ -240,13 +240,13 @@ fn init_collection_protos(
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(finreg_proto_ref, Some(finreg_proto_obj))
-  finreg_proto_obj.props.set(
+  props_set(finreg_proto_obj.props, 
     "register",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::FinalizationRegistryRegister),
     ),
   )
-  finreg_proto_obj.props.set(
+  props_set(finreg_proto_obj.props, 
     "unregister",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::FinalizationRegistryUnregister),
@@ -254,7 +254,7 @@ fn init_collection_protos(
   )
   match symbol_to_string_tag_key() {
     Some(key) =>
-      finreg_proto_obj.props.set(
+      props_set(finreg_proto_obj.props, 
         key,
         property_data_readonly(String("FinalizationRegistry")),
       )

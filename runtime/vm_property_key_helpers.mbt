@@ -12,6 +12,19 @@ fn property_key_name(value : Value) -> String raise {
 }
 
 ///|
+fn to_property_key_value(value : Value) -> Value raise {
+  let prim = if is_object_like(value) {
+    to_primitive(value, true)
+  } else {
+    value
+  }
+  match symbol_from_value(prim) {
+    Some(symbol) => Symbol(symbol)
+    None => String(to_string_strict(prim))
+  }
+}
+
+///|
 fn member_key_name(env : Env, key : @engine.MemberKey) -> String raise {
   match key {
     @engine.MemberKey::Ident(name) => name

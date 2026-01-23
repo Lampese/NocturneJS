@@ -6,6 +6,7 @@ pub struct MapData {
 ///|
 pub struct WeakMapData {
   entries : Array[(Value, Value)]
+  index : Map[Int, Int]
 }
 
 ///|

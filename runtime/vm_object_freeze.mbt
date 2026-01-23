@@ -26,11 +26,11 @@ fn object_seal(target : Value, freeze_flag : Bool) -> Value raise {
           let seal_desc = new_object_value()
           match seal_desc {
             Object(desc_obj) => {
-              desc_obj.props.set("configurable", property_data(Bool(false)))
+              props_set(desc_obj.props, "configurable", property_data(Bool(false)))
               if freeze_flag &&
                 descriptor_is_data(current) &&
                 is_truthy(property_get(current, "writable")) {
-                desc_obj.props.set("writable", property_data(Bool(false)))
+                props_set(desc_obj.props, "writable", property_data(Bool(false)))
               }
             }
             _ => ()

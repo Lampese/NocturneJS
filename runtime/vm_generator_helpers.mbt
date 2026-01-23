@@ -57,6 +57,42 @@ fn async_generator_request(
 }
 
 ///|
+fn rc_incref_gen_resume(resume_state : GenResume) -> Unit {
+  match resume_state {
+    GenResume::Next(value) => rc_incref_value(value)
+    GenResume::Return(value) => rc_incref_value(value)
+    GenResume::Throw(value) => rc_incref_value(value)
+  }
+}
+
+///|
+fn rc_decref_gen_resume(resume_state : GenResume) -> Unit {
+  match resume_state {
+    GenResume::Next(value) => rc_decref_value(value)
+    GenResume::Return(value) => rc_decref_value(value)
+    GenResume::Throw(value) => rc_decref_value(value)
+  }
+}
+
+///|
+fn async_generator_clear_request(
+  data : AsyncGeneratorData,
+  index : Int,
+  request : AsyncGeneratorRequest,
+) -> Unit {
+  rc_decref_gen_resume(request.resume_state)
+  rc_decref_value(request.promise)
+  rc_decref_value(request.resolve)
+  rc_decref_value(request.reject)
+  data.queue[index] = AsyncGeneratorRequest::{
+    resume_state: GenResume::Next(Undefined),
+    promise: Undefined,
+    resolve: Undefined,
+    reject: Undefined,
+  }
+}
+
+///|
 fn async_generator_enqueue_request(
   obj : ObjectValue,
   data : AsyncGeneratorData,
@@ -65,6 +101,10 @@ fn async_generator_enqueue_request(
   resolve : Value,
   reject : Value,
 ) -> Unit raise {
+  rc_incref_gen_resume(resume_state)
+  rc_incref_value(promise)
+  rc_incref_value(resolve)
+  rc_incref_value(reject)
   data.queue.push(AsyncGeneratorRequest::{
     resume_state,
     promise,
@@ -114,7 +154,17 @@ fn async_generator_resolve_or_reject(
   match async_generator_queue_pop(data) {
     Some(request) => {
       let handler = if is_reject { request.reject } else { request.resolve }
-      let _ = call_value_with_this(handler, [result], Undefined)
+      let popped_index = data.queue_index - 1
+      try {
+        let _ = call_value_with_this(handler, [result], Undefined)
+
+      } catch {
+        err => {
+          async_generator_clear_request(data, popped_index, request)
+          raise err
+        }
+      }
+      async_generator_clear_request(data, popped_index, request)
 
     }
     None => ()
@@ -634,8 +684,8 @@ fn generator_result_object(value : Value, done : Bool) -> Value {
   let result = new_object_value()
   match result {
     Object(obj) => {
-      obj.props.set("value", property_data(value))
-      obj.props.set("done", property_data(Bool(done)))
+      props_set(obj.props, "value", property_data(value))
+      props_set(obj.props, "done", property_data(Bool(done)))
     }
     _ => ()
   }

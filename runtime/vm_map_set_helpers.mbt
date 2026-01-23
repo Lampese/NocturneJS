@@ -50,8 +50,24 @@ fn map_has_key(data : MapData, key : Value) -> Bool {
 fn map_set_value(data : MapData, key : Value, value : Value) -> Unit {
   let normalized = map_normalize_key(key)
   match map_find_index(data.entries, normalized) {
-    Some(index) => data.entries[index] = Some((normalized, value))
-    None => data.entries.push(Some((normalized, value)))
+    Some(index) =>
+      match data.entries[index] {
+        Some((old_key, old_value)) => {
+          rc_replace_value(old_key, normalized)
+          rc_replace_value(old_value, value)
+          data.entries[index] = Some((normalized, value))
+        }
+        None => {
+          rc_incref_value(normalized)
+          rc_incref_value(value)
+          data.entries[index] = Some((normalized, value))
+        }
+      }
+    None => {
+      rc_incref_value(normalized)
+      rc_incref_value(value)
+      data.entries.push(Some((normalized, value)))
+    }
   }
 }
 
@@ -60,6 +76,13 @@ fn map_delete_key(data : MapData, key : Value) -> Bool {
   let normalized = map_normalize_key(key)
   match map_find_index(data.entries, normalized) {
     Some(index) => {
+      match data.entries[index] {
+        Some((old_key, old_value)) => {
+          rc_decref_value(old_key)
+          rc_decref_value(old_value)
+        }
+        None => ()
+      }
       data.entries[index] = None
       true
     }
@@ -128,7 +151,10 @@ fn set_add_value(data : SetData, value : Value) -> Unit {
   let normalized = map_normalize_key(value)
   match set_find_index(data.entries, normalized) {
     Some(_) => ()
-    None => data.entries.push(Some(normalized))
+    None => {
+      rc_incref_value(normalized)
+      data.entries.push(Some(normalized))
+    }
   }
 }
 
@@ -137,6 +163,10 @@ fn set_delete_value(data : SetData, value : Value) -> Bool {
   let normalized = map_normalize_key(value)
   match set_find_index(data.entries, normalized) {
     Some(index) => {
+      match data.entries[index] {
+        Some(old_value) => rc_decref_value(old_value)
+        None => ()
+      }
       data.entries[index] = None
       true
     }

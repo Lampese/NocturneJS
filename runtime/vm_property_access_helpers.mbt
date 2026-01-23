@@ -357,7 +357,7 @@ fn set_value_with_receiver(
                       let desc_obj = new_object_value()
                       match desc_obj {
                         Object(obj) =>
-                          obj.props.set("value", property_data(value))
+                          props_set(obj.props, "value", property_data(value))
                         _ => ()
                       }
                       define_property_value(
@@ -422,7 +422,7 @@ fn set_value_with_receiver(
                 } else {
                   let desc_obj = new_object_value()
                   match desc_obj {
-                    Object(obj) => obj.props.set("value", property_data(value))
+                    Object(obj) => props_set(obj.props, "value", property_data(value))
                     _ => ()
                   }
                   define_property_value(

@@ -26,7 +26,7 @@ fn gen_eval_expr_cont(
       } else {
         let is_async_gen = current_function_is_async_generator()
         let yield_with_value = fn(value : Value) {
-          Yield(value, fn(resume_state) {
+          GenStep::Yield(value, fn(resume_state) {
             match resume_state {
               GenResume::Next(arg) => k(arg)
               GenResume::Return(arg) =>
@@ -43,7 +43,7 @@ fn gen_eval_expr_cont(
           Some(inner) =>
             gen_eval_expr_cont(env, inner, fn(value) {
               if is_async_gen {
-                Await(value, fn(resume_state) {
+                GenStep::Await(value, fn(resume_state) {
                   match resume_state {
                     GenResume::Next(arg) => yield_with_value(arg)
                     GenResume::Return(arg) => gen_async_return(arg)
@@ -56,7 +56,7 @@ fn gen_eval_expr_cont(
             })
           None =>
             if is_async_gen {
-              Await(Undefined, fn(resume_state) {
+              GenStep::Await(Undefined, fn(resume_state) {
                 match resume_state {
                   GenResume::Next(arg) => yield_with_value(arg)
                   GenResume::Return(arg) => gen_async_return(arg)

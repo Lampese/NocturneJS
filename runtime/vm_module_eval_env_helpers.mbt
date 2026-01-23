@@ -28,34 +28,6 @@ fn collect_eval_private_names(env : Env) -> Array[String] {
 ///|
 
 ///|
-fn new_eval_with_var_object_env(parent : Env, obj : Value) -> Env {
-  let env = Env::{
-    id: alloc_id(),
-    parent: Some(parent),
-    bindings: @hashmap.new(),
-    readonly_bindings: @hashmap.new(),
-    deletable_bindings: @hashmap.new(),
-    private_bindings: @hashmap.new(),
-    strict: parent.strict,
-    with_object: None,
-    var_object: Some(obj),
-    new_target: parent.new_target,
-    allow_new_target: parent.allow_new_target,
-    allow_super: parent.allow_super,
-    allow_super_call: parent.allow_super_call,
-    this_uninitialized: false,
-    is_param_env: false,
-    is_catch_env: false,
-    param_binding_names: @hashmap.new(),
-    uninitialized_bindings: @hashmap.new(),
-    var_env: None,
-  }
-  register_env(env)
-  env.var_env = Some(env)
-  env
-}
-
-///|
 fn eval_with_env_mode(
   env : Env,
   args : Array[Value],
@@ -112,14 +84,7 @@ fn eval_with_env_mode(
       validate_context_in_script(
         script, allow_new_target, allow_super, allow_super_call,
       )
-      let eval_base_env = if direct && !eval_strict {
-        match env.with_object {
-          Some(obj) => new_eval_with_var_object_env(env, obj)
-          None => env
-        }
-      } else {
-        env
-      }
+      let eval_base_env = env
       let var_env = if direct {
         var_env_for(eval_base_env)
       } else {

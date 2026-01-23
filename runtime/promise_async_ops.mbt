@@ -8,12 +8,8 @@ fn new_promise_value_with_proto(proto : Value?) -> Value {
         value: Undefined,
         fulfill_reactions: [],
         reject_reactions: [],
-        is_handled: false,
       }
-      promise_table_ref.update(fn(table) {
-        table.set(obj.id, data)
-        table
-      })
+      promise_table_set(obj.id, data)
     }
     _ => ()
   }
@@ -26,23 +22,26 @@ fn promise_settle(
   state : PromiseState,
   value : Value,
 ) -> Unit {
-  let _ = data.is_handled
   match data.state {
     PromiseState::Pending => ()
     _ => return
   }
   data.state = state
+  rc_replace_value(data.value, value)
   data.value = value
+  let fulfill_items = data.fulfill_reactions
+  let reject_items = data.reject_reactions
+  data.fulfill_reactions = []
+  data.reject_reactions = []
   let reactions = if state is PromiseState::Fulfilled {
-    let items = data.fulfill_reactions
-    data.fulfill_reactions = []
-    data.reject_reactions = []
-    items
+    fulfill_items
   } else {
-    let items = data.reject_reactions
-    data.fulfill_reactions = []
-    data.reject_reactions = []
-    items
+    reject_items
+  }
+  let discarded = if state is PromiseState::Fulfilled {
+    reject_items
+  } else {
+    fulfill_items
   }
   for reaction in reactions {
     enqueue_job(new_builtin_value(BuiltinFunction::PromiseReactionJob), [
@@ -52,6 +51,10 @@ fn promise_settle(
       Bool(state is PromiseState::Rejected),
       value,
     ])
+    rc_decref_promise_reaction(reaction)
+  }
+  for reaction in discarded {
+    rc_decref_promise_reaction(reaction)
   }
 }
 
@@ -76,16 +79,20 @@ fn perform_promise_then(
   }
   match data.state {
     PromiseState::Pending => {
-      data.fulfill_reactions.push(PromiseReaction::{
+      let fulfill_reaction = PromiseReaction::{
         resolve,
         reject,
         handler: fulfill_handler,
-      })
-      data.reject_reactions.push(PromiseReaction::{
+      }
+      rc_incref_promise_reaction(fulfill_reaction)
+      data.fulfill_reactions.push(fulfill_reaction)
+      let reject_reaction = PromiseReaction::{
         resolve,
         reject,
         handler: reject_handler,
-      })
+      }
+      rc_incref_promise_reaction(reject_reaction)
+      data.reject_reactions.push(reject_reaction)
     }
     PromiseState::Fulfilled =>
       enqueue_job(new_builtin_value(BuiltinFunction::PromiseReactionJob), [
@@ -104,7 +111,6 @@ fn perform_promise_then(
         data.value,
       ])
   }
-  data.is_handled = true
   let _ = promise
 
 }

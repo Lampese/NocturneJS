@@ -144,6 +144,11 @@ fn module_import_dynamic_job_data_set(
   data : ModuleImportDynamicJobData,
 ) -> Unit {
   module_import_dynamic_job_data_ref.update(fn(table) {
+    match table.get(id) {
+      Some(existing) => rc_decref_module_import_dynamic_job_data(existing)
+      None => ()
+    }
+    rc_incref_module_import_dynamic_job_data(data)
     table.set(id, data)
     table
   })
@@ -164,6 +169,13 @@ fn module_import_dynamic_job_data_take(id : Int) -> ModuleImportDynamicJobData? 
     table
   })
   value
+}
+
+///|
+fn module_import_dynamic_job_data_release(
+  data : ModuleImportDynamicJobData,
+) -> Unit {
+  rc_decref_module_import_dynamic_job_data(data)
 }
 
 ///|

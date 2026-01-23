@@ -477,6 +477,7 @@ fn gc_count_roots(state : GcState) -> Unit {
     }
     stack
   })
+  bytecode_visit_roots(fn(value) { gc_incref_value(state, value) })
   gc_incref_object_ref(state, object_proto_ref)
   gc_incref_value_ref(state, function_proto_ref)
   gc_incref_object_ref(state, array_proto_ref)

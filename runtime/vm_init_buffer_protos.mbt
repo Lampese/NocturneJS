@@ -38,23 +38,23 @@ fn init_array_buffer_proto(
     None,
     false,
   )
-  array_buffer_proto_obj.props.set(
+  props_set(array_buffer_proto_obj.props, 
     "resize",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ArrayBufferResize),
     ),
   )
-  array_buffer_proto_obj.props.set(
+  props_set(array_buffer_proto_obj.props, 
     "slice",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayBufferSlice)),
   )
-  array_buffer_proto_obj.props.set(
+  props_set(array_buffer_proto_obj.props, 
     "transfer",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ArrayBufferTransfer),
     ),
   )
-  array_buffer_proto_obj.props.set(
+  props_set(array_buffer_proto_obj.props, 
     "transferToFixedLength",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ArrayBufferTransferToFixedLength),
@@ -99,13 +99,13 @@ fn init_shared_array_buffer_proto(
     None,
     false,
   )
-  shared_array_buffer_proto_obj.props.set(
+  props_set(shared_array_buffer_proto_obj.props, 
     "grow",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::SharedArrayBufferGrow),
     ),
   )
-  shared_array_buffer_proto_obj.props.set(
+  props_set(shared_array_buffer_proto_obj.props, 
     "slice",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::SharedArrayBufferSlice),
@@ -145,117 +145,117 @@ fn init_dataview_proto(object_proto_obj : ObjectValue) -> (ObjectValue, Value) {
     None,
     false,
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getInt8",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DataViewGetInt8)),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getUint8",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DataViewGetUint8)),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getInt16",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DataViewGetInt16)),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getUint16",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewGetUint16),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getInt32",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DataViewGetInt32)),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getUint32",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewGetUint32),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getBigInt64",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewGetBigInt64),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getBigUint64",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewGetBigUint64),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getFloat16",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewGetFloat16),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getFloat32",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewGetFloat32),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "getFloat64",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewGetFloat64),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setInt8",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DataViewSetInt8)),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setUint8",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DataViewSetUint8)),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setInt16",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DataViewSetInt16)),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setUint16",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewSetUint16),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setInt32",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DataViewSetInt32)),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setUint32",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewSetUint32),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setBigInt64",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewSetBigInt64),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setBigUint64",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewSetBigUint64),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setFloat16",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewSetFloat16),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setFloat32",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewSetFloat32),
     ),
   )
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "setFloat64",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DataViewSetFloat64),

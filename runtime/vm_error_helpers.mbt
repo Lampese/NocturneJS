@@ -9,7 +9,7 @@ fn new_error_value(
     Object(value) => {
       value.is_error = true
       if set_message {
-        value.props.set("message", property_data_non_enum(String(message)))
+        props_set(value.props, "message", property_data_non_enum(String(message)))
       }
       match current_source() {
         Some(source) => {
@@ -18,15 +18,33 @@ fn new_error_value(
             let (stack, line, column) = build_stack_from_positions(
               message, source, positions,
             )
-            value.props.set(
+            props_set(value.props, 
               "lineNumber",
               property_data(Number(Double::from_int(line))),
             )
-            value.props.set(
+            props_set(value.props, 
               "columnNumber",
               property_data(Number(Double::from_int(column))),
             )
-            value.props.set("stack", property_data(String(stack)))
+            props_set(value.props, "stack", property_data(String(stack)))
+          } else {
+            let funcs = current_function_stack()
+            if !funcs.is_empty() {
+              let lines : Array[String] = []
+              let header = if message.is_empty() { "Error" } else { message }
+              lines.push(header)
+              let mut i = funcs.length()
+              while i > 0 {
+                i = i - 1
+                let func = funcs[i]
+                let name = match func.name {
+                  Some(value) => if value.is_empty() { "<anonymous>" } else { value }
+                  None => "<anonymous>"
+                }
+                lines.push("at " + name)
+              }
+              props_set(value.props, "stack", property_data(String(lines.join("\n"))))
+            }
           }
         }
         None => ()
@@ -61,17 +79,17 @@ fn new_error_value_with_pos(
   match obj {
     Object(value) => {
       value.is_error = true
-      value.props.set("message", property_data_non_enum(String(message)))
-      value.props.set(
+      props_set(value.props, "message", property_data_non_enum(String(message)))
+      props_set(value.props, 
         "lineNumber",
         property_data(Number(Double::from_int(line))),
       )
-      value.props.set(
+      props_set(value.props, 
         "columnNumber",
         property_data(Number(Double::from_int(column))),
       )
       let stack = "\{message}:\{line}:\{column}"
-      value.props.set("stack", property_data(String(stack)))
+      props_set(value.props, "stack", property_data(String(stack)))
     }
     _ => ()
   }
@@ -106,7 +124,7 @@ fn install_error_cause(obj : ObjectValue, options : Value) -> Unit raise {
   }
   if has_property_value(options, "cause") {
     let cause = property_get(options, "cause")
-    obj.props.set("cause", property_data_non_enum(cause))
+    props_set(obj.props, "cause", property_data_non_enum(cause))
   }
 }
 
@@ -148,7 +166,7 @@ fn new_aggregate_error_value_with_proto(
   )
   match obj {
     Object(value) =>
-      value.props.set("errors", property_data_non_enum(errors_array))
+      props_set(value.props, "errors", property_data_non_enum(errors_array))
     _ => ()
   }
   obj

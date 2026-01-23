@@ -47,6 +47,7 @@ fn arguments_set_index(
       args.mapped[index] {
       env_set_local(args.env, args.params[index], value)
     }
+    rc_replace_optional_value(args.elements[index], Some(value))
     args.elements[index] = Some(value)
     true
   } else {

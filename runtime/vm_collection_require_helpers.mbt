@@ -42,12 +42,12 @@ fn require_weakmap(this_value : Value?) -> (ObjectValue, WeakMapData) raise {
         Some(data) => (obj, data)
         None => {
           let _ = throw_type_error("not a weakmap")
-          (obj, WeakMapData::{ entries: [] })
+          (obj, WeakMapData::{ entries: [], index: Map::new() })
         }
       }
     _ => {
       let _ = throw_type_error("not a weakmap")
-      (new_object_struct(None), WeakMapData::{ entries: [] })
+      (new_object_struct(None), WeakMapData::{ entries: [], index: Map::new() })
     }
   }
 }

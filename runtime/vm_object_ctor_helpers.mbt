@@ -34,6 +34,7 @@ fn new_object_value_with_proto(proto : Value?) -> Value {
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto)
   Object(obj)
 }
 
@@ -73,6 +74,7 @@ fn new_object_struct(proto : Value?) -> ObjectValue {
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto)
   obj
 }
 

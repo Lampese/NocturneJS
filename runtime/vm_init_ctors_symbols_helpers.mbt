@@ -9,7 +9,7 @@ fn new_symbol(
     key: None,
   }
   register_symbol(symbol_value)
-  ref_cell.update(fn(_) { Some(symbol_value) })
+  set_symbol_ref(ref_cell, Some(symbol_value))
   symbol_value
 }
 
@@ -17,7 +17,7 @@ fn new_symbol(
 fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   match iterator_proto() {
     Some(obj) => {
-      obj.props.set(to_string_tag_key, Property::{
+      props_set(obj.props, to_string_tag_key, Property::{
         value: Undefined,
         writable: false,
         configurable: true,
@@ -29,7 +29,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
           new_builtin_value(BuiltinFunction::IteratorToStringTagSetter),
         ),
       })
-      obj.props.set(
+      props_set(obj.props, 
         iterator_key,
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::IteratorReturnSelf),
@@ -40,7 +40,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match iterator_helper_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("Iterator Helper")),
       )
@@ -48,7 +48,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match array_iterator_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("Array Iterator")),
       )
@@ -56,7 +56,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match string_iterator_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("String Iterator")),
       )
@@ -64,7 +64,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match regexp_string_iterator_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("RegExp String Iterator")),
       )
@@ -72,7 +72,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match map_iterator_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("Map Iterator")),
       )
@@ -80,7 +80,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match set_iterator_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("Set Iterator")),
       )
@@ -88,7 +88,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match generator_function_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("GeneratorFunction")),
       )
@@ -96,7 +96,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match async_generator_function_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("AsyncGeneratorFunction")),
       )
@@ -104,7 +104,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match async_function_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("AsyncFunction")),
       )
@@ -112,7 +112,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match dataview_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("DataView")),
       )
@@ -120,7 +120,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match generator_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("Generator")),
       )
@@ -128,13 +128,13 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match async_generator_proto() {
     Some(obj) => {
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("AsyncGenerator")),
       )
       match symbol_async_iterator_key() {
         Some(key) =>
-          obj.props.set(
+          props_set(obj.props, 
             key,
             property_data_non_enum(
               new_builtin_value(BuiltinFunction::AsyncIteratorReturnSelf),
@@ -147,12 +147,12 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match bigint_proto() {
     Some(obj) =>
-      obj.props.set(to_string_tag_key, property_data_readonly(String("BigInt")))
+      props_set(obj.props, to_string_tag_key, property_data_readonly(String("BigInt")))
     None => ()
   }
   match promise_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("Promise")),
       )
@@ -160,7 +160,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match weakref_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("WeakRef")),
       )
@@ -168,7 +168,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
   }
   match finreg_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         to_string_tag_key,
         property_data_readonly(String("FinalizationRegistry")),
       )
@@ -180,7 +180,7 @@ fn init_symbol_tags(iterator_key : String, to_string_tag_key : String) -> Unit {
 fn init_async_iterator_props(async_iterator_key : String) -> Unit {
   match async_iterator_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         async_iterator_key,
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::AsyncIteratorReturnSelf),
@@ -190,7 +190,7 @@ fn init_async_iterator_props(async_iterator_key : String) -> Unit {
   }
   match async_generator_proto() {
     Some(obj) =>
-      obj.props.set(
+      props_set(obj.props, 
         async_iterator_key,
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::AsyncIteratorReturnSelf),
@@ -219,40 +219,40 @@ fn apply_symbol_ctor_props(
 ) -> Unit {
   match symbol_ctor {
     Builtin(builtin) => {
-      builtin.props.set(
+      props_set(builtin.props, 
         "iterator",
         property_data_const(Symbol(symbol_iterator)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "asyncIterator",
         property_data_const(Symbol(symbol_async_iterator)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "hasInstance",
         property_data_const(Symbol(symbol_has_instance)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "isConcatSpreadable",
         property_data_const(Symbol(symbol_is_concat_spreadable)),
       )
-      builtin.props.set("match", property_data_const(Symbol(symbol_match)))
-      builtin.props.set(
+      props_set(builtin.props, "match", property_data_const(Symbol(symbol_match)))
+      props_set(builtin.props, 
         "matchAll",
         property_data_const(Symbol(symbol_match_all)),
       )
-      builtin.props.set("replace", property_data_const(Symbol(symbol_replace)))
-      builtin.props.set("search", property_data_const(Symbol(symbol_search)))
-      builtin.props.set("species", property_data_const(Symbol(symbol_species)))
-      builtin.props.set("split", property_data_const(Symbol(symbol_split)))
-      builtin.props.set(
+      props_set(builtin.props, "replace", property_data_const(Symbol(symbol_replace)))
+      props_set(builtin.props, "search", property_data_const(Symbol(symbol_search)))
+      props_set(builtin.props, "species", property_data_const(Symbol(symbol_species)))
+      props_set(builtin.props, "split", property_data_const(Symbol(symbol_split)))
+      props_set(builtin.props, 
         "toPrimitive",
         property_data_const(Symbol(symbol_to_primitive)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "toStringTag",
         property_data_const(Symbol(symbol_to_string_tag)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "unscopables",
         property_data_const(Symbol(symbol_unscopables)),
       )
@@ -267,13 +267,13 @@ fn apply_symbol_proto_props(
   to_primitive_key : String,
   to_string_tag_key : String,
 ) -> Unit {
-  symbol_proto_obj.props.set(
+  props_set(symbol_proto_obj.props, 
     to_primitive_key,
     property_data_readonly(
       new_builtin_value(BuiltinFunction::SymbolToPrimitive),
     ),
   )
-  symbol_proto_obj.props.set(
+  props_set(symbol_proto_obj.props, 
     to_string_tag_key,
     property_data_readonly(String("Symbol")),
   )
@@ -293,14 +293,14 @@ fn apply_function_has_instance(
 ) -> Unit {
   match function_proto_value {
     Function(func) =>
-      func.props.set(
+      props_set(func.props, 
         has_instance_key,
         property_data_const(
           new_builtin_value(BuiltinFunction::FunctionSymbolHasInstance),
         ),
       )
     Builtin(builtin) =>
-      builtin.props.set(
+      props_set(builtin.props, 
         has_instance_key,
         property_data_const(
           new_builtin_value(BuiltinFunction::FunctionSymbolHasInstance),
@@ -315,22 +315,22 @@ fn make_array_unscopables_value() -> Value {
   let array_unscopables_value = new_object_value_with_proto(None)
   match array_unscopables_value {
     Object(obj) => {
-      obj.props.set("at", property_data(Bool(true)))
-      obj.props.set("copyWithin", property_data(Bool(true)))
-      obj.props.set("entries", property_data(Bool(true)))
-      obj.props.set("fill", property_data(Bool(true)))
-      obj.props.set("find", property_data(Bool(true)))
-      obj.props.set("findIndex", property_data(Bool(true)))
-      obj.props.set("findLast", property_data(Bool(true)))
-      obj.props.set("findLastIndex", property_data(Bool(true)))
-      obj.props.set("flat", property_data(Bool(true)))
-      obj.props.set("flatMap", property_data(Bool(true)))
-      obj.props.set("includes", property_data(Bool(true)))
-      obj.props.set("keys", property_data(Bool(true)))
-      obj.props.set("toReversed", property_data(Bool(true)))
-      obj.props.set("toSorted", property_data(Bool(true)))
-      obj.props.set("toSpliced", property_data(Bool(true)))
-      obj.props.set("values", property_data(Bool(true)))
+      props_set(obj.props, "at", property_data(Bool(true)))
+      props_set(obj.props, "copyWithin", property_data(Bool(true)))
+      props_set(obj.props, "entries", property_data(Bool(true)))
+      props_set(obj.props, "fill", property_data(Bool(true)))
+      props_set(obj.props, "find", property_data(Bool(true)))
+      props_set(obj.props, "findIndex", property_data(Bool(true)))
+      props_set(obj.props, "findLast", property_data(Bool(true)))
+      props_set(obj.props, "findLastIndex", property_data(Bool(true)))
+      props_set(obj.props, "flat", property_data(Bool(true)))
+      props_set(obj.props, "flatMap", property_data(Bool(true)))
+      props_set(obj.props, "includes", property_data(Bool(true)))
+      props_set(obj.props, "keys", property_data(Bool(true)))
+      props_set(obj.props, "toReversed", property_data(Bool(true)))
+      props_set(obj.props, "toSorted", property_data(Bool(true)))
+      props_set(obj.props, "toSpliced", property_data(Bool(true)))
+      props_set(obj.props, "values", property_data(Bool(true)))
     }
     _ => ()
   }
@@ -360,75 +360,75 @@ fn apply_symbol_object_props(
   split_key : String,
   unscopables_key : String,
 ) -> Unit {
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     iterator_key,
     property_data_non_enum(array_values_func),
   )
-  array_buffer_proto_obj.props.set(
+  props_set(array_buffer_proto_obj.props, 
     to_string_tag_key,
     property_data_readonly(String("ArrayBuffer")),
   )
-  shared_array_buffer_proto_obj.props.set(
+  props_set(shared_array_buffer_proto_obj.props, 
     to_string_tag_key,
     property_data_readonly(String("SharedArrayBuffer")),
   )
-  regexp_proto_obj.props.set(
+  props_set(regexp_proto_obj.props, 
     replace_key,
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::RegExpSymbolReplace),
     ),
   )
-  regexp_proto_obj.props.set(
+  props_set(regexp_proto_obj.props, 
     match_key,
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::RegExpSymbolMatch),
     ),
   )
-  regexp_proto_obj.props.set(
+  props_set(regexp_proto_obj.props, 
     match_all_key,
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::RegExpSymbolMatchAll),
     ),
   )
-  regexp_proto_obj.props.set(
+  props_set(regexp_proto_obj.props, 
     search_key,
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::RegExpSymbolSearch),
     ),
   )
-  regexp_proto_obj.props.set(
+  props_set(regexp_proto_obj.props, 
     split_key,
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::RegExpSymbolSplit),
     ),
   )
   let array_unscopables_value = make_array_unscopables_value()
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     unscopables_key,
     property_data_readonly(array_unscopables_value),
   )
-  map_proto_obj.props.set(
+  props_set(map_proto_obj.props, 
     iterator_key,
     property_data_non_enum(map_entries_func),
   )
-  set_proto_obj.props.set(iterator_key, property_data_non_enum(set_values_func))
-  string_proto_obj.props.set(
+  props_set(set_proto_obj.props, iterator_key, property_data_non_enum(set_values_func))
+  props_set(string_proto_obj.props, 
     iterator_key,
     property_data_non_enum(new_builtin_value(BuiltinFunction::StringIterator)),
   )
-  map_proto_obj.props.set(
+  props_set(map_proto_obj.props, 
     to_string_tag_key,
     property_data_readonly(String("Map")),
   )
-  set_proto_obj.props.set(
+  props_set(set_proto_obj.props, 
     to_string_tag_key,
     property_data_readonly(String("Set")),
   )
-  weakmap_proto_obj.props.set(
+  props_set(weakmap_proto_obj.props, 
     to_string_tag_key,
     property_data_readonly(String("WeakMap")),
   )
-  weakset_proto_obj.props.set(
+  props_set(weakset_proto_obj.props, 
     to_string_tag_key,
     property_data_readonly(String("WeakSet")),
   )

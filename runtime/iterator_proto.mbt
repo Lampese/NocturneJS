@@ -37,6 +37,16 @@ let map_iterator_proto_ref : Ref[ObjectValue?] = Ref::new(None)
 let set_iterator_proto_ref : Ref[ObjectValue?] = Ref::new(None)
 
 ///|
+fn async_iterator_proto_env_clear() -> Unit {
+  async_iterator_proto_env_ref.update(fn(table) {
+    for _, obj in table {
+      rc_decref_value(Object(obj))
+    }
+    Map::new()
+  })
+}
+
+///|
 fn iterator_proto() -> ObjectValue? {
   get_proto_ref(iterator_proto_ref)
 }
@@ -105,7 +115,13 @@ fn iterator_proto_for_env(env : Env) -> ObjectValue? {
                     Object(proto_obj) => {
                       match object_proto_for_env(env) {
                         Some(obj_proto) =>
-                          proto_obj.proto = Some(Object(obj_proto))
+                          {
+                            rc_replace_optional_value(
+                              proto_obj.proto,
+                              Some(Object(obj_proto)),
+                            )
+                            proto_obj.proto = Some(Object(obj_proto))
+                          }
                         None => ()
                       }
                       Some(proto_obj)
@@ -121,7 +137,13 @@ fn iterator_proto_for_env(env : Env) -> ObjectValue? {
                     Object(proto_obj) => {
                       match object_proto_for_env(env) {
                         Some(obj_proto) =>
-                          proto_obj.proto = Some(Object(obj_proto))
+                          {
+                            rc_replace_optional_value(
+                              proto_obj.proto,
+                              Some(Object(obj_proto)),
+                            )
+                            proto_obj.proto = Some(Object(obj_proto))
+                          }
                         None => ()
                       }
                       Some(proto_obj)

@@ -3,8 +3,8 @@ fn iterator_result(value : Value, done : Bool) -> Value {
   let obj = new_object_value()
   match obj {
     Object(result) => {
-      result.props.set("value", property_data(value))
-      result.props.set("done", property_data(Bool(done)))
+      props_set(result.props, "value", property_data(value))
+      props_set(result.props, "done", property_data(Bool(done)))
     }
     _ => ()
   }
@@ -113,13 +113,17 @@ fn iterator_concat_next(this_value : Value?) -> Value raise {
           data.running = false
           return iterator_result(Undefined, true)
         }
+        rc_replace_value(data.iter, iter)
         data.iter = iter
+        rc_replace_value(data.next, next_method)
         data.next = next_method
       }
       let (done, value) = iterator_step_value(data.iter, data.next)
       if done {
         data.index = data.index + 1
+        rc_replace_value(data.iter, Undefined)
         data.iter = Undefined
+        rc_replace_value(data.next, Undefined)
         data.next = Undefined
         continue
       }
@@ -146,7 +150,9 @@ fn iterator_concat_return(this_value : Value?) -> Value raise {
   try {
     let iter = data.iter
     data.index = data.count
+    rc_replace_value(data.iter, Undefined)
     data.iter = Undefined
+    rc_replace_value(data.next, Undefined)
     data.next = Undefined
     if iter is Undefined {
       data.running = false

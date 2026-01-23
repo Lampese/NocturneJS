@@ -20,16 +20,16 @@ fn init_error_ctors(
   let error_ctor = new_builtin_value(BuiltinFunction::ErrorConstructor)
   match error_ctor {
     Builtin(builtin) => {
-      builtin.props.set("prototype", property_data_const(error_proto_value))
-      builtin.props.set(
+      props_set(builtin.props, "prototype", property_data_const(error_proto_value))
+      props_set(builtin.props, 
         "isError",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ErrorIsError)),
       )
     }
     _ => ()
   }
-  error_proto_obj.props.set("constructor", property_data_non_enum(error_ctor))
-  error_proto_obj.props.set(
+  props_set(error_proto_obj.props, "constructor", property_data_non_enum(error_ctor))
+  props_set(error_proto_obj.props, 
     "toString",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ErrorToString)),
   )
@@ -38,30 +38,32 @@ fn init_error_ctors(
   )
   match aggregate_error_ctor {
     Builtin(builtin) => {
+      rc_replace_optional_value(builtin.proto, Some(error_ctor))
       builtin.proto = Some(error_ctor)
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(aggregate_error_proto_value),
       )
     }
     _ => ()
   }
-  aggregate_error_proto_obj.props.set(
+  props_set(aggregate_error_proto_obj.props, 
     "constructor",
     property_data_non_enum(aggregate_error_ctor),
   )
   let eval_error_ctor = new_builtin_value(BuiltinFunction::EvalErrorConstructor)
   match eval_error_ctor {
     Builtin(builtin) => {
+      rc_replace_optional_value(builtin.proto, Some(error_ctor))
       builtin.proto = Some(error_ctor)
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(eval_error_proto_value),
       )
     }
     _ => ()
   }
-  eval_error_proto_obj.props.set(
+  props_set(eval_error_proto_obj.props, 
     "constructor",
     property_data_non_enum(eval_error_ctor),
   )
@@ -70,15 +72,16 @@ fn init_error_ctors(
   )
   match syntax_error_ctor {
     Builtin(builtin) => {
+      rc_replace_optional_value(builtin.proto, Some(error_ctor))
       builtin.proto = Some(error_ctor)
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(syntax_error_proto_value),
       )
     }
     _ => ()
   }
-  syntax_error_proto_obj.props.set(
+  props_set(syntax_error_proto_obj.props, 
     "constructor",
     property_data_non_enum(syntax_error_ctor),
   )
@@ -87,30 +90,32 @@ fn init_error_ctors(
   )
   match range_error_ctor {
     Builtin(builtin) => {
+      rc_replace_optional_value(builtin.proto, Some(error_ctor))
       builtin.proto = Some(error_ctor)
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(range_error_proto_value),
       )
     }
     _ => ()
   }
-  range_error_proto_obj.props.set(
+  props_set(range_error_proto_obj.props, 
     "constructor",
     property_data_non_enum(range_error_ctor),
   )
   let type_error_ctor = new_builtin_value(BuiltinFunction::TypeErrorConstructor)
   match type_error_ctor {
     Builtin(builtin) => {
+      rc_replace_optional_value(builtin.proto, Some(error_ctor))
       builtin.proto = Some(error_ctor)
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(type_error_proto_value),
       )
     }
     _ => ()
   }
-  type_error_proto_obj.props.set(
+  props_set(type_error_proto_obj.props, 
     "constructor",
     property_data_non_enum(type_error_ctor),
   )
@@ -119,27 +124,29 @@ fn init_error_ctors(
   )
   match reference_error_ctor {
     Builtin(builtin) => {
+      rc_replace_optional_value(builtin.proto, Some(error_ctor))
       builtin.proto = Some(error_ctor)
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(reference_error_proto_value),
       )
     }
     _ => ()
   }
-  reference_error_proto_obj.props.set(
+  props_set(reference_error_proto_obj.props, 
     "constructor",
     property_data_non_enum(reference_error_ctor),
   )
   let uri_error_ctor = new_builtin_value(BuiltinFunction::UriErrorConstructor)
   match uri_error_ctor {
     Builtin(builtin) => {
+      rc_replace_optional_value(builtin.proto, Some(error_ctor))
       builtin.proto = Some(error_ctor)
-      builtin.props.set("prototype", property_data_const(uri_error_proto_value))
+      props_set(builtin.props, "prototype", property_data_const(uri_error_proto_value))
     }
     _ => ()
   }
-  uri_error_proto_obj.props.set(
+  props_set(uri_error_proto_obj.props, 
     "constructor",
     property_data_non_enum(uri_error_ctor),
   )

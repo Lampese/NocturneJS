@@ -214,6 +214,7 @@ fn set_proto_of_object(
     }
     return false
   }
+  rc_replace_optional_value(obj.proto, proto)
   obj.proto = proto
   true
 }
@@ -248,6 +249,7 @@ fn set_proto_of_value(
         }
         return false
       }
+      rc_replace_optional_value(func.proto, proto)
       func.proto = proto
       true
     }
@@ -262,6 +264,7 @@ fn set_proto_of_value(
         }
         return false
       }
+      rc_replace_optional_value(bound.proto, proto)
       bound.proto = proto
       true
     }
@@ -276,6 +279,7 @@ fn set_proto_of_value(
         }
         return false
       }
+      rc_replace_optional_value(builtin.proto, proto)
       builtin.proto = proto
       true
     }
@@ -290,6 +294,7 @@ fn set_proto_of_value(
         }
         return false
       }
+      rc_replace_optional_value(arr.proto, proto)
       arr.proto = proto
       true
     }
@@ -304,6 +309,7 @@ fn set_proto_of_value(
         }
         return false
       }
+      rc_replace_optional_value(args.proto, proto)
       args.proto = proto
       true
     }

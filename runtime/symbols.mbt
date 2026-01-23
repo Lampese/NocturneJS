@@ -67,17 +67,64 @@ fn symbol_registry_get(key : String) -> SymbolValue? {
 ///|
 fn symbol_registry_set(key : String, symbol : SymbolValue) -> Unit {
   symbol_registry_ref.update(fn(current) {
+    match current.get(key) {
+      Some(existing) => rc_decref_value(Symbol(existing))
+      None => ()
+    }
+    rc_incref_value(Symbol(symbol))
     current.set(key, symbol)
     current
   })
 }
 
 ///|
-fn register_symbol(symbol : SymbolValue) -> Unit {
+fn symbol_registry_clear() -> Unit {
+  symbol_registry_ref.update(fn(current) {
+    for _, symbol in current {
+      rc_decref_value(Symbol(symbol))
+    }
+    Map::new()
+  })
+}
+
+///|
+fn symbol_table_set(symbol : SymbolValue) -> Unit {
   symbol_table_ref.update(fn(current) {
+    match current.get(symbol.id) {
+      Some(existing) => rc_decref_value(Symbol(existing))
+      None => ()
+    }
+    rc_incref_value(Symbol(symbol))
     current.set(symbol.id, symbol)
     current
   })
+}
+
+///|
+fn symbol_table_remove(id : Int) -> Unit {
+  symbol_table_ref.update(fn(current) {
+    match current.get(id) {
+      Some(existing) => rc_decref_value(Symbol(existing))
+      None => ()
+    }
+    let _ = current.remove(id)
+    current
+  })
+}
+
+///|
+fn symbol_table_clear() -> Unit {
+  symbol_table_ref.update(fn(current) {
+    for _, symbol in current {
+      rc_decref_value(Symbol(symbol))
+    }
+    Map::new()
+  })
+}
+
+///|
+fn register_symbol(symbol : SymbolValue) -> Unit {
+  symbol_table_set(symbol)
   register_value(Symbol(symbol))
 }
 
@@ -216,6 +263,29 @@ fn symbol_from_value(value : Value) -> SymbolValue? {
     Object(obj) => obj.symbol_data
     _ => None
   }
+}
+
+///|
+fn rc_replace_optional_symbol(
+  old_value : SymbolValue?,
+  new_value : SymbolValue?,
+) -> Unit {
+  match (old_value, new_value) {
+    (None, None) => ()
+    (Some(old), Some(new)) => rc_replace_value(Symbol(old), Symbol(new))
+    (Some(old), None) => rc_decref_value(Symbol(old))
+    (None, Some(new)) => rc_incref_value(Symbol(new))
+  }
+}
+
+///|
+fn set_symbol_ref(cell : Ref[SymbolValue?], value : SymbolValue?) -> Unit {
+  let mut prev : SymbolValue? = None
+  cell.update(fn(current) {
+    prev = current
+    value
+  })
+  rc_replace_optional_symbol(prev, value)
 }
 
 ///|

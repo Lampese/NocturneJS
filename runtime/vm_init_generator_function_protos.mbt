@@ -19,11 +19,11 @@ fn init_generator_function_protos() -> (ObjectValue, ObjectValue, ObjectValue) {
     _ => new_object_struct(function_proto())
   }
   set_proto_ref(generator_function_ctor_ref, Some(generator_function_ctor_obj))
-  generator_function_ctor_obj.props.set(
+  props_set(generator_function_ctor_obj.props, 
     "prototype",
     property_data_const(Object(generator_function_proto_obj)),
   )
-  generator_function_proto_obj.props.set(
+  props_set(generator_function_proto_obj.props, 
     "constructor",
     property_data_non_enum(Object(generator_function_ctor_obj)),
   )
@@ -51,11 +51,11 @@ fn init_generator_function_protos() -> (ObjectValue, ObjectValue, ObjectValue) {
     async_generator_function_ctor_ref,
     Some(async_generator_function_ctor_obj),
   )
-  async_generator_function_ctor_obj.props.set(
+  props_set(async_generator_function_ctor_obj.props, 
     "prototype",
     property_data_const(Object(async_generator_function_proto_obj)),
   )
-  async_generator_function_proto_obj.props.set(
+  props_set(async_generator_function_proto_obj.props, 
     "constructor",
     property_data_non_enum(Object(async_generator_function_ctor_obj)),
   )

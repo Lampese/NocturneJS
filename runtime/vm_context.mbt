@@ -557,11 +557,28 @@ fn gen_root_depth() -> Int {
 }
 
 ///|
+fn gen_root_snapshot() -> Array[Value] {
+  let roots : Array[Value] = []
+  current_generator_data_ref.update(fn(current) {
+    match current {
+      Some(data) =>
+        for value in data.roots {
+          roots.push(value)
+        }
+      None => ()
+    }
+    current
+  })
+  roots
+}
+
+///|
 fn gen_root_push(value : Value) -> Int {
   let mut depth = 0
   current_generator_data_ref.update(fn(current) {
     match current {
       Some(data) => {
+        rc_incref_value(value)
         data.roots.push(value)
         depth = data.roots.length()
       }
@@ -578,9 +595,29 @@ fn gen_root_pop_to(depth : Int) -> Unit {
     match current {
       Some(data) =>
         while data.roots.length() > depth {
-          let _ = data.roots.pop()
+          match data.roots.pop() {
+            Some(value) => rc_decref_value(value)
+            None => ()
+          }
 
         }
+      None => ()
+    }
+    current
+  })
+}
+
+///|
+fn gen_root_replace(values : Array[Value]) -> Unit {
+  current_generator_data_ref.update(fn(current) {
+    match current {
+      Some(data) => {
+        rc_clear_values(data.roots)
+        for value in values {
+          rc_incref_value(value)
+          data.roots.push(value)
+        }
+      }
       None => ()
     }
     current

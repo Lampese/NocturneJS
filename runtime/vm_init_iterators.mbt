@@ -12,31 +12,31 @@ fn init_generator_and_iterator_protos(
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(generator_proto_ref, Some(generator_proto_obj))
-  generator_function_proto_obj.props.set(
+  props_set(generator_function_proto_obj.props, 
     "prototype",
     property_data_readonly(Object(generator_proto_obj)),
   )
-  generator_proto_obj.props.set(
+  props_set(generator_proto_obj.props, 
     "constructor",
     property_data_readonly(Object(generator_function_proto_obj)),
   )
   match symbol_to_string_tag_key() {
     Some(key) =>
-      generator_proto_obj.props.set(
+      props_set(generator_proto_obj.props, 
         key,
         property_data_readonly(String("Generator")),
       )
     None => ()
   }
-  generator_proto_obj.props.set(
+  props_set(generator_proto_obj.props, 
     "next",
     property_data_non_enum(new_builtin_value(BuiltinFunction::GeneratorNext)),
   )
-  generator_proto_obj.props.set(
+  props_set(generator_proto_obj.props, 
     "return",
     property_data_non_enum(new_builtin_value(BuiltinFunction::GeneratorReturn)),
   )
-  generator_proto_obj.props.set(
+  props_set(generator_proto_obj.props, 
     "throw",
     property_data_non_enum(new_builtin_value(BuiltinFunction::GeneratorThrow)),
   )
@@ -48,35 +48,35 @@ fn init_generator_and_iterator_protos(
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(async_generator_proto_ref, Some(async_generator_proto_obj))
-  async_generator_function_proto_obj.props.set(
+  props_set(async_generator_function_proto_obj.props, 
     "prototype",
     property_data_readonly(Object(async_generator_proto_obj)),
   )
-  async_generator_proto_obj.props.set(
+  props_set(async_generator_proto_obj.props, 
     "constructor",
     property_data_readonly(Object(async_generator_function_proto_obj)),
   )
   match symbol_to_string_tag_key() {
     Some(key) =>
-      async_generator_proto_obj.props.set(
+      props_set(async_generator_proto_obj.props, 
         key,
         property_data_readonly(String("AsyncGenerator")),
       )
     None => ()
   }
-  async_generator_proto_obj.props.set(
+  props_set(async_generator_proto_obj.props, 
     "next",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::AsyncGeneratorNext),
     ),
   )
-  async_generator_proto_obj.props.set(
+  props_set(async_generator_proto_obj.props, 
     "return",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::AsyncGeneratorReturn),
     ),
   )
-  async_generator_proto_obj.props.set(
+  props_set(async_generator_proto_obj.props, 
     "throw",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::AsyncGeneratorThrow),
@@ -84,7 +84,7 @@ fn init_generator_and_iterator_protos(
   )
   match symbol_async_iterator_key() {
     Some(key) =>
-      async_generator_proto_obj.props.set(
+      props_set(async_generator_proto_obj.props, 
         key,
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::AsyncIteratorReturnSelf),
@@ -99,6 +99,10 @@ fn init_generator_and_iterator_protos(
     Object(obj) => obj
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
+  rc_replace_optional_value(
+    generator_proto_obj.proto,
+    Some(Object(iterator_proto_obj)),
+  )
   generator_proto_obj.proto = Some(Object(iterator_proto_obj))
   set_proto_ref(iterator_proto_ref, Some(iterator_proto_obj))
   let async_iterator_proto_value = new_object_value_with_proto(
@@ -109,82 +113,87 @@ fn init_generator_and_iterator_protos(
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(async_iterator_proto_ref, Some(async_iterator_proto_obj))
-  async_generator_proto_obj.proto = value_from_object(async_iterator_proto())
+  let async_iterator_proto_value = value_from_object(async_iterator_proto())
+  rc_replace_optional_value(
+    async_generator_proto_obj.proto,
+    async_iterator_proto_value,
+  )
+  async_generator_proto_obj.proto = async_iterator_proto_value
   let async_from_sync_iterator_proto_value = new_object_value_with_proto(
-    value_from_object(async_iterator_proto()),
+    async_iterator_proto_value,
   )
   let async_from_sync_iterator_proto_obj = match
     async_from_sync_iterator_proto_value {
     Object(obj) => obj
-    _ => new_object_struct(value_from_object(async_iterator_proto()))
+    _ => new_object_struct(async_iterator_proto_value)
   }
   set_proto_ref(
     async_from_sync_iterator_proto_ref,
     Some(async_from_sync_iterator_proto_obj),
   )
-  async_from_sync_iterator_proto_obj.props.set(
+  props_set(async_from_sync_iterator_proto_obj.props, 
     "next",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::AsyncFromSyncIteratorNext),
     ),
   )
-  async_from_sync_iterator_proto_obj.props.set(
+  props_set(async_from_sync_iterator_proto_obj.props, 
     "return",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::AsyncFromSyncIteratorReturn),
     ),
   )
-  async_from_sync_iterator_proto_obj.props.set(
+  props_set(async_from_sync_iterator_proto_obj.props, 
     "throw",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::AsyncFromSyncIteratorThrow),
     ),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "drop",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorDrop)),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "filter",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorFilter)),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "flatMap",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorFlatMap)),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "map",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorMap)),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "take",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorTake)),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "every",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorEvery)),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "find",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorFind)),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "forEach",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorForEach)),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "some",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorSome)),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "reduce",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorReduce)),
   )
-  iterator_proto_obj.props.set(
+  props_set(iterator_proto_obj.props, 
     "toArray",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorToArray)),
   )
-  iterator_proto_obj.props.set("constructor", Property::{
+  props_set(iterator_proto_obj.props, "constructor", Property::{
     value: Undefined,
     writable: false,
     configurable: true,
@@ -193,7 +202,11 @@ fn init_generator_and_iterator_protos(
     setter: Some(new_builtin_value(BuiltinFunction::IteratorConstructorSetter)),
   })
   match generator_proto() {
-    Some(obj) => obj.proto = value_from_object(iterator_proto())
+    Some(obj) => {
+      let proto_value = value_from_object(iterator_proto())
+      rc_replace_optional_value(obj.proto, proto_value)
+      obj.proto = proto_value
+    }
     None => ()
   }
   let iterator_helper_proto_value = new_object_value_with_proto(
@@ -204,13 +217,13 @@ fn init_generator_and_iterator_protos(
     _ => new_object_struct(Some(Object(iterator_proto_obj)))
   }
   set_proto_ref(iterator_helper_proto_ref, Some(iterator_helper_proto_obj))
-  iterator_helper_proto_obj.props.set(
+  props_set(iterator_helper_proto_obj.props, 
     "next",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::IteratorHelperNext),
     ),
   )
-  iterator_helper_proto_obj.props.set(
+  props_set(iterator_helper_proto_obj.props, 
     "return",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::IteratorHelperReturn),
@@ -224,13 +237,13 @@ fn init_generator_and_iterator_protos(
     _ => new_object_struct(Some(Object(iterator_helper_proto_obj)))
   }
   set_proto_ref(iterator_concat_proto_ref, Some(iterator_concat_proto_obj))
-  iterator_concat_proto_obj.props.set(
+  props_set(iterator_concat_proto_obj.props, 
     "next",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::IteratorConcatNext),
     ),
   )
-  iterator_concat_proto_obj.props.set(
+  props_set(iterator_concat_proto_obj.props, 
     "return",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::IteratorConcatReturn),
@@ -244,11 +257,11 @@ fn init_generator_and_iterator_protos(
     _ => new_object_struct(Some(Object(iterator_proto_obj)))
   }
   set_proto_ref(iterator_wrap_proto_ref, Some(iterator_wrap_proto_obj))
-  iterator_wrap_proto_obj.props.set(
+  props_set(iterator_wrap_proto_obj.props, 
     "next",
     property_data_non_enum(new_builtin_value(BuiltinFunction::IteratorWrapNext)),
   )
-  iterator_wrap_proto_obj.props.set(
+  props_set(iterator_wrap_proto_obj.props, 
     "return",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::IteratorWrapReturn),
@@ -262,7 +275,7 @@ fn init_generator_and_iterator_protos(
     _ => new_object_struct(Some(Object(iterator_proto_obj)))
   }
   set_proto_ref(array_iterator_proto_ref, Some(array_iterator_proto_obj))
-  array_iterator_proto_obj.props.set(
+  props_set(array_iterator_proto_obj.props, 
     "next",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ArrayIteratorNext),
@@ -276,7 +289,7 @@ fn init_generator_and_iterator_protos(
     _ => new_object_struct(Some(Object(iterator_proto_obj)))
   }
   set_proto_ref(string_iterator_proto_ref, Some(string_iterator_proto_obj))
-  string_iterator_proto_obj.props.set(
+  props_set(string_iterator_proto_obj.props, 
     "next",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::StringIteratorNext),
@@ -294,7 +307,7 @@ fn init_generator_and_iterator_protos(
     regexp_string_iterator_proto_ref,
     Some(regexp_string_iterator_proto_obj),
   )
-  regexp_string_iterator_proto_obj.props.set(
+  props_set(regexp_string_iterator_proto_obj.props, 
     "next",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::RegExpStringIteratorNext),
@@ -308,7 +321,7 @@ fn init_generator_and_iterator_protos(
     _ => new_object_struct(Some(Object(iterator_proto_obj)))
   }
   set_proto_ref(map_iterator_proto_ref, Some(map_iterator_proto_obj))
-  map_iterator_proto_obj.props.set(
+  props_set(map_iterator_proto_obj.props, 
     "next",
     property_data_non_enum(new_builtin_value(BuiltinFunction::MapIteratorNext)),
   )
@@ -320,7 +333,7 @@ fn init_generator_and_iterator_protos(
     _ => new_object_struct(Some(Object(iterator_proto_obj)))
   }
   set_proto_ref(set_iterator_proto_ref, Some(set_iterator_proto_obj))
-  set_iterator_proto_obj.props.set(
+  props_set(set_iterator_proto_obj.props, 
     "next",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SetIteratorNext)),
   )

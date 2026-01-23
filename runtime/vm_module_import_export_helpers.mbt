@@ -217,7 +217,7 @@ fn predeclare_module_export_call(
     _ => return
   }
   if !exports.props.contains(export_name) {
-    exports.props.set(export_name, Property::{
+    props_set(exports.props, export_name, Property::{
       value: Undefined,
       writable: false,
       configurable: false,

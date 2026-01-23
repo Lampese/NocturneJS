@@ -43,6 +43,56 @@ let async_function_ctor_env_ref : Ref[Map[Int, BuiltinValue]] = Ref::new(
 )
 
 ///|
+fn generator_proto_env_clear() -> Unit {
+  generator_proto_env_ref.update(fn(table) {
+    for _, obj in table {
+      rc_decref_value(Object(obj))
+    }
+    Map::new()
+  })
+}
+
+///|
+fn async_generator_proto_env_clear() -> Unit {
+  async_generator_proto_env_ref.update(fn(table) {
+    for _, obj in table {
+      rc_decref_value(Object(obj))
+    }
+    Map::new()
+  })
+}
+
+///|
+fn generator_function_ctor_env_clear() -> Unit {
+  generator_function_ctor_env_ref.update(fn(table) {
+    for _, ctor in table {
+      rc_decref_value(Builtin(ctor))
+    }
+    Map::new()
+  })
+}
+
+///|
+fn async_generator_function_ctor_env_clear() -> Unit {
+  async_generator_function_ctor_env_ref.update(fn(table) {
+    for _, ctor in table {
+      rc_decref_value(Builtin(ctor))
+    }
+    Map::new()
+  })
+}
+
+///|
+fn async_function_ctor_env_clear() -> Unit {
+  async_function_ctor_env_ref.update(fn(table) {
+    for _, ctor in table {
+      rc_decref_value(Builtin(ctor))
+    }
+    Map::new()
+  })
+}
+
+///|
 fn generator_proto() -> ObjectValue? {
   get_proto_ref(generator_proto_ref)
 }
@@ -84,14 +134,15 @@ fn generator_function_ctor_for_env(env : Env) -> BuiltinValue? {
         match generator_function_proto() {
           Some(proto_obj) =>
             match proto_obj.props.get("constructor") {
-              Some(prop) =>
-                match prop.value {
-                  Builtin(builtin) => {
-                    let clone = clone_builtin_value_for_env(builtin, env)
-                    table.set(realm_id, clone)
-                    value = Some(clone)
-                    table
-                  }
+                Some(prop) =>
+                  match prop.value {
+                    Builtin(builtin) => {
+                      let clone = clone_builtin_value_for_env(builtin, env)
+                      rc_incref_value(Builtin(clone))
+                      table.set(realm_id, clone)
+                      value = Some(clone)
+                      table
+                    }
                   _ => table
                 }
               None => table
@@ -140,13 +191,14 @@ fn async_function_ctor_for_env(env : Env) -> BuiltinValue? {
           Some(proto_obj) =>
             match proto_obj.props.get("constructor") {
               Some(prop) =>
-                match prop.value {
-                  Builtin(builtin) => {
-                    let clone = clone_builtin_value_for_env(builtin, env)
-                    table.set(realm_id, clone)
-                    value = Some(clone)
-                    table
-                  }
+                  match prop.value {
+                    Builtin(builtin) => {
+                      let clone = clone_builtin_value_for_env(builtin, env)
+                      rc_incref_value(Builtin(clone))
+                      table.set(realm_id, clone)
+                      value = Some(clone)
+                      table
+                    }
                   _ => table
                 }
               None => table
@@ -192,13 +244,14 @@ fn async_generator_function_ctor_for_env(env : Env) -> BuiltinValue? {
           Some(proto_obj) =>
             match proto_obj.props.get("constructor") {
               Some(prop) =>
-                match prop.value {
-                  Builtin(builtin) => {
-                    let clone = clone_builtin_value_for_env(builtin, env)
-                    table.set(realm_id, clone)
-                    value = Some(clone)
-                    table
-                  }
+                  match prop.value {
+                    Builtin(builtin) => {
+                      let clone = clone_builtin_value_for_env(builtin, env)
+                      rc_incref_value(Builtin(clone))
+                      table.set(realm_id, clone)
+                      value = Some(clone)
+                      table
+                    }
                   _ => table
                 }
               None => table
@@ -253,7 +306,9 @@ fn async_iterator_proto_for_env(env : Env) -> ObjectValue? {
               Some(obj_proto) => Some(Object(obj_proto))
               None => value_from_object(object_proto())
             }
+            rc_replace_optional_value(clone.proto, proto_value)
             clone.proto = proto_value
+            rc_incref_value(Object(clone))
             table.set(realm_id, clone)
             value = Some(clone)
             table
@@ -282,7 +337,7 @@ fn set_function_proto_prototype(
       }
     None => property_data_readonly(Object(proto_obj))
   }
-  func_proto.props.set("prototype", proto_prop)
+  props_set(func_proto.props, "prototype", proto_prop)
 }
 
 ///|
@@ -313,7 +368,9 @@ fn generator_proto_for_env_with_ctor(
               Some(iter_proto) => Some(Object(iter_proto))
               None => value_from_object(iterator_proto())
             }
+            rc_replace_optional_value(clone.proto, proto_value)
             clone.proto = proto_value
+            rc_incref_value(Object(clone))
             table.set(realm_id, clone)
             value = Some(clone)
             table
@@ -366,7 +423,9 @@ fn async_generator_proto_for_env_with_ctor(
               Some(iter_proto) => Some(Object(iter_proto))
               None => value_from_object(async_iterator_proto())
             }
+            rc_replace_optional_value(clone.proto, proto_value)
             clone.proto = proto_value
+            rc_incref_value(Object(clone))
             table.set(realm_id, clone)
             value = Some(clone)
             table

@@ -288,7 +288,7 @@ fn copy_proxy_data_properties(
           let enumerable_value = property_get(desc, "enumerable")
           if is_truthy(enumerable_value) {
             let value = property_get(source, name)
-            target.props.set(name, property_data(value))
+            props_set(target.props, name, property_data(value))
           }
         }
     }

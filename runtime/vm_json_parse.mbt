@@ -175,7 +175,7 @@ fn json_to_value(value : Json) -> Value {
       match obj {
         Object(object) =>
           for key, entry in entries {
-            object.props.set(key, property_data(json_to_value(entry)))
+            props_set(object.props, key, property_data(json_to_value(entry)))
           }
         _ => ()
       }
@@ -378,7 +378,7 @@ fn json_to_value_with_number_flags(
               entry, flags, current,
             )
             current = next
-            object.props.set(key, property_data(value_entry))
+            props_set(object.props, key, property_data(value_entry))
           }
         _ => ()
       }

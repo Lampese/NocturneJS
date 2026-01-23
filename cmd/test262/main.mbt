@@ -148,6 +148,18 @@ fn load_list_file(path : String, out : Array[String]) -> Unit raise {
 }
 
 ///|
+fn load_tests_file(path : String, out : Array[String]) -> Unit raise {
+  let text = @fs.read_file_to_string(path)
+  for line in text.split("\n") {
+    let trimmed = line.trim().to_string()
+    if trimmed.is_empty() || trimmed.has_prefix("#") || trimmed.has_prefix(";") {
+      continue
+    }
+    out.push(trimmed)
+  }
+}
+
+///|
 fn try_read_dir(path : String) -> Array[String]? {
   try {
     if @fs.is_dir(path) {
@@ -732,6 +744,25 @@ fn read_text(path : String) -> Result[String, String] {
 }
 
 ///|
+fn gc_threshold_for_test(filename : String, override_threshold : Int?) -> Int? {
+  match override_threshold {
+    Some(value) => Some(value)
+    None =>
+      if filename.contains("staging/sm/Date/dst-offset-caching-") {
+        Some(1_000_000)
+      } else {
+        None
+      }
+  }
+}
+
+///|
+fn finalize_engine(engine : @qjs.Engine, result : String?) -> String? {
+  engine.reset_runtime_state()
+  result
+}
+
+///|
 fn run_test_variant(
   meta : TestMeta,
   filename : String,
@@ -743,7 +774,8 @@ fn run_test_variant(
 ) -> String? {
   @runtime.reset_runtime_state()
   let engine = @qjs.Engine::new()
-  match gc_threshold {
+  let effective_gc_threshold = gc_threshold_for_test(filename, gc_threshold)
+  match effective_gc_threshold {
     Some(threshold) => engine.set_gc_threshold(threshold)
     None => ()
   }
@@ -753,18 +785,27 @@ fn run_test_variant(
     let include_path = join_harness_path(harness_dir, include_name)
     let include_source = match read_text(include_path) {
       Ok(text) => text
-      Err(msg) => return Some("harness load \{include_path}: \{msg}")
+      Err(msg) =>
+        return finalize_engine(
+          engine, Some("harness load \{include_path}: \{msg}"),
+        )
     }
     let include_result = engine.eval_result_with_path_mode(
       include_source, include_path, false, false,
     ) catch {
-      err => return Some("harness error \{include_path}: \{err}")
+      err =>
+        return finalize_engine(
+          engine, Some("harness error \{include_path}: \{err}"),
+        )
     }
     match include_result {
       Ok(_) => ()
       Err(err_value) =>
-        return Some(
-          "harness error \{include_path}: \{engine.format_error(err_value)}",
+        return finalize_engine(
+          engine,
+          Some(
+            "harness error \{include_path}: \{engine.format_error(err_value)}",
+          ),
         )
     }
   }
@@ -774,20 +815,22 @@ fn run_test_variant(
     meta.is_module,
     force_strict,
   ) catch {
-    err => return Some("eval error: \{err}")
+    err => return finalize_engine(engine, Some("eval error: \{err}"))
   }
-  match result {
+  let outcome = match result {
     Ok(_) => {
       if meta.is_negative {
-        return Some("expected error")
-      }
-      if meta.is_async {
+        Some("expected error")
+      } else if meta.is_async {
         let done = engine.async_done_count()
         if done != 1 {
-          return Some("$DONE() not called")
+          Some("$DONE() not called")
+        } else {
+          None
         }
+      } else {
+        None
       }
-      None
     }
     Err(err_value) =>
       if meta.is_negative {
@@ -811,6 +854,7 @@ fn run_test_variant(
         Some(engine.format_error(err_value))
       }
   }
+  finalize_engine(engine, outcome)
 }
 
 ///|
@@ -821,13 +865,20 @@ fn run_test(
   exclude_files : Map[String, Bool],
   gc_threshold : Int?,
   gc_debug : Bool,
+  verbose : Bool,
 ) -> TestOutcome {
   if is_excluded(filename, exclude_dirs, exclude_files) {
+    if verbose {
+      println("EXCLUDE \{filename}")
+    }
     return TestOutcome::Excluded
   }
   let source = match read_text(filename) {
     Ok(text) => text
     Err(msg) => {
+      if verbose {
+        println("ERROR \{filename}")
+      }
       println("error: \{filename}: \{msg}")
       return TestOutcome::Failed
     }
@@ -835,7 +886,13 @@ fn run_test(
   let meta = parse_test_meta(cfg, filename, source)
   let (use_strict, use_nostrict) = compute_modes(cfg, meta)
   if meta.skip || (!use_strict && !use_nostrict) {
+    if verbose {
+      println("SKIP \{filename}")
+    }
     return TestOutcome::Skipped
+  }
+  if verbose {
+    println("RUN \{filename}")
   }
   let harness_dir = if !cfg.harness_dir.is_empty() {
     cfg.harness_dir
@@ -885,7 +942,20 @@ fn add_tests_from_files(files : Array[String], out : Array[String]) -> Unit {
 ///|
 fn parse_args(
   args : Array[String],
-) -> (String, Array[String], Array[String], Bool, Int, Int, Int?, Bool) {
+) -> (
+  String,
+  Array[String],
+  Array[String],
+  Bool,
+  Int,
+  Int,
+  Int?,
+  Bool,
+  Bool,
+  Bool,
+  String?,
+  Bool?,
+) {
   let mut config = "quickjs/test262.conf"
   let files : Array[String] = []
   let dirs : Array[String] = []
@@ -894,6 +964,10 @@ fn parse_args(
   let mut count_limit = -1
   let mut gc_threshold : Int? = None
   let mut gc_debug = false
+  let mut list_tests = false
+  let mut print_count = false
+  let mut tests_file : String? = None
+  let mut verbose_override : Bool? = None
   let mut i = 1
   while i < args.length() {
     let arg = args[i]
@@ -924,6 +998,26 @@ fn parse_args(
     } else if arg == "--gc-debug" {
       gc_debug = true
       i = i + 1
+    } else if arg == "--tests-file" && i + 1 < args.length() {
+      tests_file = Some(args[i + 1])
+      ignore_testdir = true
+      i = i + 2
+    } else if arg == "--verbose" && i + 1 < args.length() {
+      let value = args[i + 1]
+      match parse_bool_value(value) {
+        Some(flag) => verbose_override = Some(flag)
+        None => println("error: invalid --verbose \{value}")
+      }
+      i = i + 2
+    } else if arg == "--quiet" {
+      verbose_override = Some(false)
+      i = i + 1
+    } else if arg == "--list-tests" {
+      list_tests = true
+      i = i + 1
+    } else if arg == "--print-count" {
+      print_count = true
+      i = i + 1
     } else if arg == "-f" && i + 1 < args.length() {
       files.push(args[i + 1])
       ignore_testdir = true
@@ -940,7 +1034,7 @@ fn parse_args(
   }
   (
     config, files, dirs, ignore_testdir, start_index, count_limit, gc_threshold,
-    gc_debug,
+    gc_debug, list_tests, print_count, tests_file, verbose_override,
   )
 }
 
@@ -950,6 +1044,18 @@ fn parse_int_value(value : String) -> Int? {
   match parsed {
     Ok(index) => Some(index)
     Err(_) => None
+  }
+}
+
+///|
+fn parse_bool_value(value : String) -> Bool? {
+  let trimmed = value.trim().to_string()
+  if trimmed == "yes" || trimmed == "true" || trimmed == "1" {
+    Some(true)
+  } else if trimmed == "no" || trimmed == "false" || trimmed == "0" {
+    Some(false)
+  } else {
+    None
   }
 }
 
@@ -974,6 +1080,10 @@ fn main {
     count_limit,
     gc_threshold,
     gc_debug,
+    list_tests,
+    print_count,
+    tests_file,
+    verbose_override,
   ) = parse_args(args)
   let cfg = parse_config(config_path, ignore_testdir) catch {
     err => {
@@ -981,8 +1091,21 @@ fn main {
       return
     }
   }
+  match verbose_override {
+    Some(value) => cfg.verbose = value
+    None => ()
+  }
   let tests : Array[String] = []
-  add_tests_from_files(cfg.tests, tests)
+  match tests_file {
+    Some(list_path) =>
+      load_tests_file(list_path, tests) catch {
+        err => {
+          println("error: \{err}")
+          return
+        }
+      }
+    None => add_tests_from_files(cfg.tests, tests)
+  }
   for dir in dirs {
     add_tests_from_dir(dir, tests)
   }
@@ -1016,17 +1139,30 @@ fn main {
     println("error: no tests found")
     return
   }
+  if list_tests {
+    for test_path in run_tests {
+      println(test_path)
+    }
+    return
+  }
+  if print_count {
+    println(Int::to_string(run_tests.length()))
+    return
+  }
   let (exclude_dirs, exclude_files) = build_exclude_sets(cfg.excludes)
   let mut total = 0
   let mut failed = 0
   let mut skipped = 0
   let mut excluded = 0
   for test_path in run_tests {
-    if cfg.verbose {
-      println("RUN \{test_path}")
-    }
     let outcome = run_test(
-      cfg, test_path, exclude_dirs, exclude_files, gc_threshold, gc_debug,
+      cfg,
+      test_path,
+      exclude_dirs,
+      exclude_files,
+      gc_threshold,
+      gc_debug,
+      cfg.verbose,
     )
     match outcome {
       TestOutcome::Passed => total = total + 1

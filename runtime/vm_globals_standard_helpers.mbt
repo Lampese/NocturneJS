@@ -3,18 +3,18 @@ fn init_json_object(object_proto_obj : ObjectValue) -> Value {
   let json_obj = new_object_value_with_proto(Some(Object(object_proto_obj)))
   match json_obj {
     Object(obj) => {
-      obj.props.set(
+      props_set(obj.props, 
         "stringify",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::JsonStringify),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "parse",
         property_data_non_enum(new_builtin_value(BuiltinFunction::JsonParse)),
       )
       match symbol_to_string_tag_key() {
-        Some(key) => obj.props.set(key, property_data_readonly(String("JSON")))
+        Some(key) => props_set(obj.props, key, property_data_readonly(String("JSON")))
         None => ()
       }
     }
@@ -28,71 +28,71 @@ fn init_reflect_object(object_proto_obj : ObjectValue) -> Value {
   let reflect_obj = new_object_value_with_proto(Some(Object(object_proto_obj)))
   match reflect_obj {
     Object(obj) => {
-      obj.props.set(
+      props_set(obj.props, 
         "apply",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ReflectApply)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "construct",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ReflectConstruct),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "get",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ReflectGet)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "getOwnPropertyDescriptor",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ReflectGetOwnPropertyDescriptor),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "getPrototypeOf",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ReflectGetPrototypeOf),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "defineProperty",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ReflectDefineProperty),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "has",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ReflectHas)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "isExtensible",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ReflectIsExtensible),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "set",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ReflectSet)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "setPrototypeOf",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ReflectSetPrototypeOf),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "deleteProperty",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ReflectDeleteProperty),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "preventExtensions",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ReflectPreventExtensions),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "ownKeys",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ReflectOwnKeys),
@@ -100,7 +100,7 @@ fn init_reflect_object(object_proto_obj : ObjectValue) -> Value {
       )
       match symbol_to_string_tag_key() {
         Some(key) =>
-          obj.props.set(key, property_data_readonly(String("Reflect")))
+          props_set(obj.props, key, property_data_readonly(String("Reflect")))
         None => ()
       }
     }
@@ -114,61 +114,61 @@ fn init_atomics_object(object_proto_obj : ObjectValue) -> Value {
   let atomics_obj = new_object_value_with_proto(Some(Object(object_proto_obj)))
   match atomics_obj {
     Object(obj) => {
-      obj.props.set(
+      props_set(obj.props, 
         "add",
         property_data_non_enum(new_builtin_value(BuiltinFunction::AtomicsAdd)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "and",
         property_data_non_enum(new_builtin_value(BuiltinFunction::AtomicsAnd)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "or",
         property_data_non_enum(new_builtin_value(BuiltinFunction::AtomicsOr)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "sub",
         property_data_non_enum(new_builtin_value(BuiltinFunction::AtomicsSub)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "xor",
         property_data_non_enum(new_builtin_value(BuiltinFunction::AtomicsXor)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "exchange",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::AtomicsExchange),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "compareExchange",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::AtomicsCompareExchange),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "load",
         property_data_non_enum(new_builtin_value(BuiltinFunction::AtomicsLoad)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "store",
         property_data_non_enum(new_builtin_value(BuiltinFunction::AtomicsStore)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "isLockFree",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::AtomicsIsLockFree),
         ),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "pause",
         property_data_non_enum(new_builtin_value(BuiltinFunction::AtomicsPause)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "wait",
         property_data_non_enum(new_builtin_value(BuiltinFunction::AtomicsWait)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "notify",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::AtomicsNotify),
@@ -176,7 +176,7 @@ fn init_atomics_object(object_proto_obj : ObjectValue) -> Value {
       )
       match symbol_to_string_tag_key() {
         Some(key) =>
-          obj.props.set(key, property_data_readonly(String("Atomics")))
+          props_set(obj.props, key, property_data_readonly(String("Atomics")))
         None => ()
       }
     }
@@ -190,166 +190,166 @@ fn init_math_object(object_proto_obj : ObjectValue) -> Value {
   let math_obj = new_object_value_with_proto(Some(Object(object_proto_obj)))
   match math_obj {
     Object(obj) => {
-      obj.props.set("E", property_data_const(Number(2.718281828459045)))
-      obj.props.set("LN2", property_data_const(Number(0.6931471805599453)))
-      obj.props.set("LN10", property_data_const(Number(2.302585092994046)))
-      obj.props.set("LOG2E", property_data_const(Number(1.4426950408889634)))
-      obj.props.set("LOG10E", property_data_const(Number(0.4342944819032518)))
-      obj.props.set("PI", property_data_const(Number(@math.PI)))
-      obj.props.set("SQRT1_2", property_data_const(Number(0.7071067811865476)))
-      obj.props.set("SQRT2", property_data_const(Number(1.4142135623730951)))
-      obj.props.set(
+      props_set(obj.props, "E", property_data_const(Number(2.718281828459045)))
+      props_set(obj.props, "LN2", property_data_const(Number(0.6931471805599453)))
+      props_set(obj.props, "LN10", property_data_const(Number(2.302585092994046)))
+      props_set(obj.props, "LOG2E", property_data_const(Number(1.4426950408889634)))
+      props_set(obj.props, "LOG10E", property_data_const(Number(0.4342944819032518)))
+      props_set(obj.props, "PI", property_data_const(Number(@math.PI)))
+      props_set(obj.props, "SQRT1_2", property_data_const(Number(0.7071067811865476)))
+      props_set(obj.props, "SQRT2", property_data_const(Number(1.4142135623730951)))
+      props_set(obj.props, 
         "abs",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathAbs)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "acos",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathAcos)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "acosh",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathAcosh)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "asin",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathAsin)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "asinh",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathAsinh)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "atan",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathAtan)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "atan2",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathAtan2)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "atanh",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathAtanh)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "cbrt",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathCbrt)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "ceil",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathCeil)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "clz32",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathClz32)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "cos",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathCos)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "cosh",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathCosh)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "exp",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathExp)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "expm1",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathExpm1)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "floor",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathFloor)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "fround",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathFround)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "f16round",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathF16Round)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "hypot",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathHypot)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "imul",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathImul)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "log",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathLog)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "log1p",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathLog1p)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "log2",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathLog2)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "log10",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathLog10)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "max",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathMax)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "min",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathMin)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "pow",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathPow)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "random",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathRandom)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "round",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathRound)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "sign",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathSign)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "sin",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathSin)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "sinh",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathSinh)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "sqrt",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathSqrt)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "tan",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathTan)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "tanh",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathTanh)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "trunc",
         property_data_non_enum(new_builtin_value(BuiltinFunction::MathTrunc)),
       )
-      obj.props.set(
+      props_set(obj.props, 
         "sumPrecise",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::MathSumPrecise),
         ),
       )
       match symbol_to_string_tag_key() {
-        Some(key) => obj.props.set(key, property_data_readonly(String("Math")))
+        Some(key) => props_set(obj.props, key, property_data_readonly(String("Math")))
         None => ()
       }
     }

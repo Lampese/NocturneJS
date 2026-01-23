@@ -8,11 +8,11 @@ fn new_async_from_sync_iterator(
   )
   match iterator {
     Object(iter_obj) => {
-      iter_obj.props.set(
+      props_set(iter_obj.props, 
         async_from_sync_iter_target_key,
         property_data_non_enum(sync_iter),
       )
-      iter_obj.props.set(
+      props_set(iter_obj.props, 
         async_from_sync_iter_next_key,
         property_data_non_enum(next_method),
       )

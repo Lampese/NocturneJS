@@ -6,184 +6,184 @@ fn init_object_ctor(
   let object_ctor = new_builtin_value(BuiltinFunction::ObjectConstructor)
   match object_ctor {
     Builtin(builtin) => {
-      builtin.props.set("prototype", property_data_const(object_proto_value))
-      builtin.props.set(
+      props_set(builtin.props, "prototype", property_data_const(object_proto_value))
+      props_set(builtin.props, 
         "defineProperty",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectDefineProperty),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "defineProperties",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectDefineProperties),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "getOwnPropertyDescriptor",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectGetOwnPropertyDescriptor),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "getOwnPropertyNames",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectGetOwnPropertyNames),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "getOwnPropertySymbols",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectGetOwnPropertySymbols),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "getPrototypeOf",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectGetPrototypeOf),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "setPrototypeOf",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectSetPrototypeOf),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "create",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ObjectCreate)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "keys",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ObjectKeys)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "values",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ObjectValues)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "entries",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectEntries),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "groupBy",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectGroupBy),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "is",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ObjectIs)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "isExtensible",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectIsExtensible),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "preventExtensions",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectPreventExtensions),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "seal",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ObjectSeal)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "isSealed",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectIsSealed),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "isFrozen",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectIsFrozen),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "freeze",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ObjectFreeze)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "getOwnPropertyDescriptors",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectGetOwnPropertyDescriptors),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "fromEntries",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ObjectFromEntries),
         ),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "assign",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ObjectAssign)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "hasOwn",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ObjectHasOwn)),
       )
     }
     _ => ()
   }
-  object_proto_obj.props.set("constructor", property_data_non_enum(object_ctor))
-  object_proto_obj.props.set(
+  props_set(object_proto_obj.props, "constructor", property_data_non_enum(object_ctor))
+  props_set(object_proto_obj.props, 
     "toString",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ObjectToString)),
   )
-  object_proto_obj.props.set(
+  props_set(object_proto_obj.props, 
     "toLocaleString",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ObjectToLocaleString),
     ),
   )
-  object_proto_obj.props.set(
+  props_set(object_proto_obj.props, 
     "valueOf",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ObjectValueOf)),
   )
-  object_proto_obj.props.set(
+  props_set(object_proto_obj.props, 
     "hasOwnProperty",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ObjectHasOwnProperty),
     ),
   )
-  object_proto_obj.props.set(
+  props_set(object_proto_obj.props, 
     "propertyIsEnumerable",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ObjectPropertyIsEnumerable),
     ),
   )
-  object_proto_obj.props.set(
+  props_set(object_proto_obj.props, 
     "isPrototypeOf",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ObjectIsPrototypeOf),
     ),
   )
-  object_proto_obj.props.set(
+  props_set(object_proto_obj.props, 
     "__defineGetter__",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ObjectDefineGetter),
     ),
   )
-  object_proto_obj.props.set(
+  props_set(object_proto_obj.props, 
     "__defineSetter__",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ObjectDefineSetter),
     ),
   )
-  object_proto_obj.props.set(
+  props_set(object_proto_obj.props, 
     "__lookupGetter__",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ObjectLookupGetter),
     ),
   )
-  object_proto_obj.props.set(
+  props_set(object_proto_obj.props, 
     "__lookupSetter__",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ObjectLookupSetter),

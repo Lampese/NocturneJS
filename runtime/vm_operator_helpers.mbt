@@ -27,14 +27,14 @@ fn typeof_value(value : Value) -> String {
 }
 
 ///|
-fn eval_unary(op : @engine.UnaryOp, value : Value) -> Value raise {
-  match op {
-    Plus =>
+fn eval_unary_code(code : Int, value : Value) -> Value raise {
+  match code {
+    0 =>
       match value {
         BigInt(_) => throw_type_error("cannot convert BigInt to number")
         _ => Number(to_number(value))
       }
-    Minus =>
+    1 =>
       match to_numeric(value) {
         BigInt(v) => BigInt(v.neg())
         Number(num) =>
@@ -49,7 +49,7 @@ fn eval_unary(op : @engine.UnaryOp, value : Value) -> Value raise {
           }
         _ => fail("unreachable")
       }
-    BitNot =>
+    2 =>
       match to_numeric(value) {
         BigInt(v) => BigInt(v.neg().sub(@bigint.BigInt::from_int(1)))
         Number(num) => {
@@ -58,22 +58,23 @@ fn eval_unary(op : @engine.UnaryOp, value : Value) -> Value raise {
         }
         _ => fail("unreachable")
       }
-    Not => Bool(!is_truthy(value))
-    Typeof => String(typeof_value(value))
-    Void => Undefined
-    Delete => Bool(true)
+    3 => Bool(!is_truthy(value))
+    4 => String(typeof_value(value))
+    5 => Undefined
+    6 => Bool(true)
+    _ => throw_type_error("invalid bytecode unary op")
   }
 }
 
+fn eval_unary(op : @engine.UnaryOp, value : Value) -> Value raise {
+  eval_unary_code(bytecode_unary_op_code(op), value)
+}
+
 ///|
-fn eval_binary(
-  op : @engine.BinaryOp,
-  left : Value,
-  right : Value,
-) -> Value raise {
-  match op {
-    Add => eval_add(left, right)
-    Sub => {
+fn eval_binary_code(code : Int, left : Value, right : Value) -> Value raise {
+  match code {
+    0 => eval_add(left, right)
+    1 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -84,7 +85,7 @@ fn eval_binary(
         _ => Number(to_number(l) - to_number(r))
       }
     }
-    Mul => {
+    2 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -95,7 +96,7 @@ fn eval_binary(
         _ => Number(to_number(l) * to_number(r))
       }
     }
-    Div => {
+    3 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -111,7 +112,7 @@ fn eval_binary(
         _ => Number(to_number(l) / to_number(r))
       }
     }
-    Mod => {
+    4 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -127,7 +128,7 @@ fn eval_binary(
         _ => Number(Double::mod(to_number(l), to_number(r)))
       }
     }
-    Pow => {
+    5 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -143,7 +144,7 @@ fn eval_binary(
         _ => Number(@math.pow(to_number(l), to_number(r)))
       }
     }
-    Shl => {
+    6 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -164,7 +165,7 @@ fn eval_binary(
         }
       }
     }
-    Sar => {
+    7 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -185,7 +186,7 @@ fn eval_binary(
         }
       }
     }
-    Shr => {
+    8 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -199,17 +200,17 @@ fn eval_binary(
         }
       }
     }
-    Lt => Bool(compare_values(left, right, CmpLt))
-    Lte => Bool(compare_values(left, right, CmpLte))
-    Gt => Bool(compare_values(left, right, CmpGt))
-    Gte => Bool(compare_values(left, right, CmpGte))
-    In => Bool(eval_in(left, right))
-    Instanceof => Bool(eval_instanceof(left, right))
-    Eq => Bool(loose_eq(left, right))
-    Neq => Bool(!loose_eq(left, right))
-    StrictEq => Bool(strict_eq(left, right))
-    StrictNeq => Bool(!strict_eq(left, right))
-    BitAnd => {
+    9 => Bool(compare_values(left, right, CmpLt))
+    10 => Bool(compare_values(left, right, CmpLte))
+    11 => Bool(compare_values(left, right, CmpGt))
+    12 => Bool(compare_values(left, right, CmpGte))
+    13 => Bool(eval_in(left, right))
+    14 => Bool(eval_instanceof(left, right))
+    15 => Bool(loose_eq(left, right))
+    16 => Bool(!loose_eq(left, right))
+    17 => Bool(strict_eq(left, right))
+    18 => Bool(!strict_eq(left, right))
+    19 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -223,7 +224,7 @@ fn eval_binary(
         }
       }
     }
-    BitXor => {
+    20 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -237,7 +238,7 @@ fn eval_binary(
         }
       }
     }
-    BitOr => {
+    21 => {
       let l = to_numeric(left)
       let r = to_numeric(right)
       match (l, r) {
@@ -251,10 +252,19 @@ fn eval_binary(
         }
       }
     }
-    LogicalAnd => left
-    LogicalOr => left
-    Coalesce => left
+    22 => left
+    23 => left
+    24 => left
+    _ => throw_type_error("invalid bytecode binary op")
   }
+}
+
+fn eval_binary(
+  op : @engine.BinaryOp,
+  left : Value,
+  right : Value,
+) -> Value raise {
+  eval_binary_code(bytecode_binary_op_code(op), left, right)
 }
 
 ///|
@@ -350,24 +360,11 @@ fn eval_instanceof(left : Value, right : Value) -> Bool raise {
 
 ///|
 fn update_values(op : @engine.UpdateOp, value : Value) -> (Value, Value) raise {
-  match value {
-    BigInt(v) => {
-      let one = @bigint.BigInt::from_int(1)
-      let new_value = match op {
-        @engine.UpdateOp::Inc => v.add(one)
-        @engine.UpdateOp::Dec => v.sub(one)
-      }
-      (BigInt(v), BigInt(new_value))
-    }
-    _ => {
-      let old_num = to_number(value)
-      let new_num = match op {
-        @engine.UpdateOp::Inc => old_num + 1.0
-        @engine.UpdateOp::Dec => old_num - 1.0
-      }
-      (Number(old_num), Number(new_num))
-    }
+  let is_inc = match op {
+    @engine.UpdateOp::Inc => true
+    @engine.UpdateOp::Dec => false
   }
+  update_values_with_flags(is_inc, value)
 }
 
 ///|
@@ -376,10 +373,39 @@ fn update_result(
   old_value : Value,
   new_value : Value,
 ) -> Value {
-  match kind {
-    @engine.UpdateKind::Prefix => new_value
-    @engine.UpdateKind::Postfix => old_value
+  let is_prefix = match kind {
+    @engine.UpdateKind::Prefix => true
+    @engine.UpdateKind::Postfix => false
   }
+  update_result_with_flags(is_prefix, old_value, new_value)
+}
+
+///|
+fn update_values_with_flags(
+  is_inc : Bool,
+  value : Value,
+) -> (Value, Value) raise {
+  match value {
+    BigInt(v) => {
+      let one = @bigint.BigInt::from_int(1)
+      let new_value = if is_inc { v.add(one) } else { v.sub(one) }
+      (BigInt(v), BigInt(new_value))
+    }
+    _ => {
+      let old_num = to_number(value)
+      let new_num = if is_inc { old_num + 1.0 } else { old_num - 1.0 }
+      (Number(old_num), Number(new_num))
+    }
+  }
+}
+
+///|
+fn update_result_with_flags(
+  is_prefix : Bool,
+  old_value : Value,
+  new_value : Value,
+) -> Value {
+  if is_prefix { new_value } else { old_value }
 }
 
 ///|
@@ -533,7 +559,7 @@ fn delete_ident(env : Env, name : String, strict : Bool) -> Value raise {
   match env.bindings.get(name) {
     Some(_) =>
       if env.deletable_bindings.contains(name) {
-        env.bindings.remove(name)
+        env_bindings_remove(env, name)
         env.readonly_bindings.remove(name)
         env.uninitialized_bindings.remove(name)
         env.deletable_bindings.remove(name)
@@ -611,7 +637,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
               if !prop.configurable {
                 false
               } else {
-                obj.props.remove(name)
+                props_remove(obj.props, name)
                 true
               }
             None => true
@@ -628,7 +654,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
           if !prop.configurable {
             false
           } else {
-            func.props.remove(name)
+            props_remove(func.props, name)
             true
           }
         None => true
@@ -641,7 +667,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
           if !prop.configurable {
             false
           } else {
-            bound.props.remove(name)
+            props_remove(bound.props, name)
             true
           }
         None => true
@@ -654,7 +680,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
           if !prop.configurable {
             false
           } else {
-            builtin.props.remove(name)
+            props_remove(builtin.props, name)
             true
           }
         None => true
@@ -673,7 +699,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
                   if !prop.configurable {
                     ok = false
                   } else {
-                    arr.props.remove(name)
+                    props_remove(arr.props, name)
                   }
                 None => ()
               }
@@ -690,11 +716,12 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
                     if !prop.configurable {
                       ok = false
                     } else {
-                      arr.props.remove(name)
+                      props_remove(arr.props, name)
                     }
                   None => ()
                 }
                 if ok && index < arr.elements.length() {
+                  rc_replace_optional_value(arr.elements[index], None)
                   arr.elements[index] = None
                 }
               }
@@ -704,7 +731,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
                   if !prop.configurable {
                     ok = false
                   } else {
-                    arr.props.remove(name)
+                    props_remove(arr.props, name)
                   }
                 None => ()
               }
@@ -722,11 +749,12 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
                 if !prop.configurable {
                   ok = false
                 } else {
-                  args.props.remove(name)
+                  props_remove(args.props, name)
                 }
               None => ()
             }
             if ok && index < args.elements.length() {
+              rc_replace_optional_value(args.elements[index], None)
               args.elements[index] = None
               if index < args.mapped.length() {
                 args.mapped[index] = false
@@ -739,7 +767,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
               if !prop.configurable {
                 ok = false
               } else {
-                args.props.remove(name)
+                props_remove(args.props, name)
               }
             None => ()
           }

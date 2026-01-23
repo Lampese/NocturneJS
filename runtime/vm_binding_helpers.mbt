@@ -59,36 +59,24 @@ fn prepare_identifier_assignment_target(
         None =>
           match global_object(env) {
             Some(obj) =>
-              if has_property_in_chain(obj.props, obj.proto, name) {
-                fn(value) raise {
-                  if has_property_in_chain(obj.props, obj.proto, name) {
-                    let _ = property_set(
-                      Value::Object(obj),
-                      name,
-                      value,
-                      strict,
-                    )
+              fn(value) raise {
+                if has_property_in_chain(obj.props, obj.proto, name) {
+                  let _ = property_set(
+                    Value::Object(obj),
+                    name,
+                    value,
+                    strict,
+                  )
 
-                  } else if strict {
-                    let _ = throw_reference_error("undefined variable")
+                } else if strict {
+                  let _ = throw_reference_error("undefined variable")
 
-                  } else {
-                    let _ = property_set(Value::Object(obj), name, value, false)
+                } else {
+                  let _ = property_set(Value::Object(obj), name, value, false)
 
-                  }
-                }
-              } else {
-                fn(value) raise {
-                  if strict {
-                    let _ = throw_reference_error("undefined variable")
-
-                  } else {
-                    let _ = property_set(Value::Object(obj), name, value, false)
-
-                  }
                 }
               }
-            None => fn(value) { env.bindings.set(name, value) }
+            None => fn(value) { env_bindings_set(env, name, value) }
           }
       }
   }

@@ -30,8 +30,8 @@ fn call_builtin_object(
       let result = new_object_value()
       match result {
         Object(obj) => {
-          obj.props.set("proxy", property_data(proxy))
-          obj.props.set("revoke", property_data(revoke))
+          props_set(obj.props, "proxy", property_data(proxy))
+          props_set(obj.props, "revoke", property_data(revoke))
         }
         _ => ()
       }

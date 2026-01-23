@@ -10,7 +10,7 @@ fn init_array_proto(
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(array_proto_ref, Some(array_proto_obj))
-  array_proto_obj.props.set("length", Property::{
+  props_set(array_proto_obj.props, "length", Property::{
     value: Number(0.0),
     writable: true,
     configurable: false,
@@ -18,167 +18,167 @@ fn init_array_proto(
     getter: None,
     setter: None,
   })
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "toString",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayToString)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "toLocaleString",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ArrayToLocaleString),
     ),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "at",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayAt)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "push",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayPush)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "pop",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayPop)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "shift",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayShift)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "unshift",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayUnshift)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "splice",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArraySplice)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "slice",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArraySlice)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "reverse",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayReverse)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "concat",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayConcat)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "join",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayJoin)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "indexOf",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayIndexOf)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "lastIndexOf",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayLastIndexOf)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "includes",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayIncludes)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "copyWithin",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayCopyWithin)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "fill",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayFill)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "find",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayFind)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "findIndex",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayFindIndex)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "findLast",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayFindLast)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "findLastIndex",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::ArrayFindLastIndex),
     ),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "flat",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayFlat)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "flatMap",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayFlatMap)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "toReversed",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayToReversed)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "toSorted",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayToSorted)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "toSpliced",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayToSpliced)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "with",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayWith)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "entries",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayEntries)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "every",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayEvery)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "some",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArraySome)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "forEach",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayForEach)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "map",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayMap)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "filter",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayFilter)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "reduce",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayReduce)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "reduceRight",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayReduceRight)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "sort",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArraySort)),
   )
   let array_values_func = new_builtin_value(BuiltinFunction::ArrayValues)
-  array_proto_obj.props.set("values", property_data_non_enum(array_values_func))
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, "values", property_data_non_enum(array_values_func))
+  props_set(array_proto_obj.props, 
     "keys",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayKeys)),
   )
-  array_proto_obj.props.set(
+  props_set(array_proto_obj.props, 
     "entries",
     property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayEntries)),
   )
   match symbol_iterator_key() {
     Some(key) =>
-      array_proto_obj.props.set(key, property_data_non_enum(array_values_func))
+      props_set(array_proto_obj.props, key, property_data_non_enum(array_values_func))
     None => ()
   }
   (array_proto_obj, array_proto_value, array_values_func)

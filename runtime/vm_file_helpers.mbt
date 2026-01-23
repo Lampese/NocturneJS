@@ -23,49 +23,49 @@ fn new_file_object(fd : Int) -> Value {
   let obj = new_object_value()
   match obj {
     Object(object) => {
-      object.props.set(
+      props_set(object.props, 
         "__fd",
         property_data_non_enum(Number(Double::from_int(fd))),
       )
-      object.props.set(
+      props_set(object.props, 
         "puts",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FilePuts)),
       )
-      object.props.set(
+      props_set(object.props, 
         "putByte",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FilePutByte)),
       )
-      object.props.set(
+      props_set(object.props, 
         "seek",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FileSeek)),
       )
-      object.props.set(
+      props_set(object.props, 
         "tell",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FileTell)),
       )
-      object.props.set(
+      props_set(object.props, 
         "read",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FileRead)),
       )
-      object.props.set(
+      props_set(object.props, 
         "readAsString",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::FileReadAsString),
         ),
       )
-      object.props.set(
+      props_set(object.props, 
         "getByte",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FileGetByte)),
       )
-      object.props.set(
+      props_set(object.props, 
         "getline",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FileGetline)),
       )
-      object.props.set(
+      props_set(object.props, 
         "eof",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FileEof)),
       )
-      object.props.set(
+      props_set(object.props, 
         "close",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FileClose)),
       )

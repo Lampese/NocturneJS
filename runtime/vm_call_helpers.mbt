@@ -237,21 +237,24 @@ fn call_user_function_body_impl(
         !func.is_arrow,
       )
       with_top_level_function_decls(top_level_func_decls, fn() raise {
-        with_annex_b_var_func_decls(func_var_names, fn() raise {
-          hoist_decls(body_env, func.body, false, false)
-          merge_arg_env_bindings(arg_env, var_env)
-          with_env_value(body_env, fn() raise {
-            try {
-              for stmt in func.body {
-                let _ = eval_stmt(body_env, stmt)
-
-              }
-              Undefined
-            } catch {
-              ReturnSignal(value) => value
-              BreakSignal((_, _)) => fail("illegal break")
-              ContinueSignal((_, _)) => fail("illegal continue")
-              ThrowSignal(value) => raise ThrowSignal(value)
+          with_annex_b_var_func_decls(func_var_names, fn() raise {
+            hoist_decls(body_env, func.body, false, false)
+            merge_arg_env_bindings(arg_env, var_env)
+            with_env_value(body_env, fn() raise {
+              try {
+                let bytecode = bytecode_compile_function_body(func)
+                match bytecode {
+                  Some(code) => bytecode_exec(body_env, code)
+                  None => {
+                    let _ = throw_type_error("bytecode compile failed")
+                    Undefined
+                  }
+                }
+              } catch {
+                ReturnSignal(value) => value
+                BreakSignal((_, _)) => fail("illegal break")
+                ContinueSignal((_, _)) => fail("illegal continue")
+                ThrowSignal(value) => raise ThrowSignal(value)
               err => raise err
             }
           })
@@ -344,20 +347,23 @@ fn call_user_function_body_impl(
         !func.is_arrow,
       )
       with_top_level_function_decls(top_level_func_decls, fn() raise {
-        with_annex_b_var_func_decls(func_var_names, fn() raise {
-          hoist_decls(body_env, func.body, false, false)
-          with_env_value(body_env, fn() raise {
-            try {
-              for stmt in func.body {
-                let _ = eval_stmt(body_env, stmt)
-
+      with_annex_b_var_func_decls(func_var_names, fn() raise {
+        hoist_decls(body_env, func.body, false, false)
+        with_env_value(body_env, fn() raise {
+          try {
+            let bytecode = bytecode_compile_function_body(func)
+            match bytecode {
+              Some(code) => bytecode_exec(body_env, code)
+              None => {
+                let _ = throw_type_error("bytecode compile failed")
+                Undefined
               }
-              Undefined
-            } catch {
-              ReturnSignal(value) => value
-              BreakSignal((_, _)) => fail("illegal break")
-              ContinueSignal((_, _)) => fail("illegal continue")
-              ThrowSignal(value) => raise ThrowSignal(value)
+            }
+          } catch {
+            ReturnSignal(value) => value
+            BreakSignal((_, _)) => fail("illegal break")
+            ContinueSignal((_, _)) => fail("illegal continue")
+            ThrowSignal(value) => raise ThrowSignal(value)
               err => raise err
             }
           })
@@ -513,8 +519,8 @@ fn new_generator_value(
     arg_env.var_env = Some(arg_env)
     let param_env = Env::new(Some(arg_env))
     param_env.strict = func.is_strict
-    param_env.var_env = Some(arg_env)
     arg_env_opt = Some(arg_env)
+    param_env.var_env = Some(arg_env)
     let var_env = Env::new(Some(param_env))
     var_env.var_env = Some(var_env)
     func_env.var_env = Some(var_env)
@@ -638,11 +644,21 @@ fn new_generator_value(
   })
   let body_env = prepare_function_body_env(frame, func)
   let top_level_func_decls = collect_top_level_function_decls(func.body)
-  let next_step = fn(_ : GenResume) raise {
-    let step = with_top_level_function_decls_step(top_level_func_decls, fn() raise {
-      gen_eval_stmt_seq(body_env, func.body, 0)
-    })
-    top_level_function_decls_wrap_step(step, top_level_func_decls)
+  let bytecode_opt = bytecode_compile_function_body(func)
+  let next_step = match bytecode_opt {
+    Some(bytecode) => {
+      let state = bytecode_exec_state_new(body_env, bytecode)
+      fn(resume_state : GenResume) raise {
+        let step = with_top_level_function_decls_step(top_level_func_decls, fn() raise {
+          bytecode_exec_step(state, resume_state)
+        })
+        top_level_function_decls_wrap_step(step, top_level_func_decls)
+      }
+    }
+    None => {
+      let _ = throw_type_error("bytecode compile failed")
+      fn(_ : GenResume) raise { Done(Normal(Undefined)) }
+    }
   }
   let data = GeneratorData::{
     state: GeneratorState::SuspendedStart,
@@ -706,5 +722,8 @@ fn new_generator_value(
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto_value)
+  rc_incref_env(body_env)
+  rc_incref_value(Function(func))
   Object(obj)
 }

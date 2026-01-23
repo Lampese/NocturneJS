@@ -4,7 +4,7 @@ fn new_array_value_with_proto(
   proto? : Value? = None,
 ) -> Value {
   let props = Map::new()
-  props.set(
+  props_set(props, 
     "length",
     property_data_non_enum_non_config(
       Number(Double::from_int(elements.length())),
@@ -22,6 +22,8 @@ fn new_array_value_with_proto(
     typed_array_data: None,
     extensible: true,
   })
+  rc_incref_optional_values(elements)
+  rc_incref_optional_value(proto_value)
   Array(arr)
 }
 

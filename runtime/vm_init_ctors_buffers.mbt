@@ -13,16 +13,16 @@ fn init_array_buffer_ctors(
   let array_ctor = new_builtin_value(BuiltinFunction::ArrayConstructor)
   match array_ctor {
     Builtin(builtin) => {
-      builtin.props.set("prototype", property_data_const(array_proto_value))
-      builtin.props.set(
+      props_set(builtin.props, "prototype", property_data_const(array_proto_value))
+      props_set(builtin.props, 
         "isArray",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayIsArray)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "from",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayFrom)),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "of",
         property_data_non_enum(new_builtin_value(BuiltinFunction::ArrayOf)),
       )
@@ -36,17 +36,17 @@ fn init_array_buffer_ctors(
     }
     _ => ()
   }
-  array_proto_obj.props.set("constructor", property_data_non_enum(array_ctor))
+  props_set(array_proto_obj.props, "constructor", property_data_non_enum(array_ctor))
   let array_buffer_ctor = new_builtin_value(
     BuiltinFunction::ArrayBufferConstructor,
   )
   match array_buffer_ctor {
     Builtin(builtin) => {
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(array_buffer_proto_value),
       )
-      builtin.props.set(
+      props_set(builtin.props, 
         "isView",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::ArrayBufferIsView),
@@ -62,7 +62,7 @@ fn init_array_buffer_ctors(
     }
     _ => ()
   }
-  array_buffer_proto_obj.props.set(
+  props_set(array_buffer_proto_obj.props, 
     "constructor",
     property_data_non_enum(array_buffer_ctor),
   )
@@ -71,7 +71,7 @@ fn init_array_buffer_ctors(
   )
   match shared_array_buffer_ctor {
     Builtin(builtin) => {
-      builtin.props.set(
+      props_set(builtin.props, 
         "prototype",
         property_data_const(shared_array_buffer_proto_value),
       )
@@ -85,17 +85,17 @@ fn init_array_buffer_ctors(
     }
     _ => ()
   }
-  shared_array_buffer_proto_obj.props.set(
+  props_set(shared_array_buffer_proto_obj.props, 
     "constructor",
     property_data_non_enum(shared_array_buffer_ctor),
   )
   let dataview_ctor = new_builtin_value(BuiltinFunction::DataViewConstructor)
   match dataview_ctor {
     Builtin(builtin) =>
-      builtin.props.set("prototype", property_data_const(dataview_proto_value))
+      props_set(builtin.props, "prototype", property_data_const(dataview_proto_value))
     _ => ()
   }
-  dataview_proto_obj.props.set(
+  props_set(dataview_proto_obj.props, 
     "constructor",
     property_data_non_enum(dataview_ctor),
   )

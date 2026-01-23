@@ -6,6 +6,11 @@ priv struct GcMeta {
 }
 
 ///|
+struct RcMeta {
+  mut ref_count : Int
+}
+
+///|
 priv struct GcState {
   meta : Map[Int, GcMeta]
   weakrefs : Array[ObjectValue]
@@ -31,6 +36,7 @@ pub struct RuntimeState {
   gc_debug_ref : Ref[Bool]
   gc_value_root_ref : Ref[Array[Value]]
   gc_pending_ref : Ref[Bool]
+  gc_rc_meta_ref : Ref[Map[Int, RcMeta]]
   print_log_ref : Ref[Array[String]]
   async_done_ref : Ref[Int]
   can_block_ref : Ref[Bool]
@@ -54,6 +60,7 @@ fn RuntimeState::new() -> RuntimeState {
     gc_debug_ref: Ref::new(false),
     gc_value_root_ref: Ref::new([]),
     gc_pending_ref: Ref::new(false),
+    gc_rc_meta_ref: Ref::new(Map::new()),
     print_log_ref: Ref::new([]),
     async_done_ref: Ref::new(0),
     can_block_ref: Ref::new(true),
@@ -122,6 +129,11 @@ fn gc_value_root_ref() -> Ref[Array[Value]] {
 ///|
 fn gc_pending_ref() -> Ref[Bool] {
   current_runtime_state().gc_pending_ref
+}
+
+///|
+fn gc_rc_meta_ref() -> Ref[Map[Int, RcMeta]] {
+  current_runtime_state().gc_rc_meta_ref
 }
 
 ///|

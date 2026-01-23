@@ -8,11 +8,11 @@ fn init_symbol_proto(object_proto_obj : ObjectValue) -> (ObjectValue, Value) {
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(symbol_proto_ref, Some(symbol_proto_obj))
-  symbol_proto_obj.props.set(
+  props_set(symbol_proto_obj.props, 
     "toString",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SymbolToString)),
   )
-  symbol_proto_obj.props.set(
+  props_set(symbol_proto_obj.props, 
     "valueOf",
     property_data_non_enum(new_builtin_value(BuiltinFunction::SymbolValueOf)),
   )
@@ -29,19 +29,19 @@ fn init_regexp_proto(object_proto_obj : ObjectValue) -> (ObjectValue, Value) {
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(regexp_proto_ref, Some(regexp_proto_obj))
-  regexp_proto_obj.props.set(
+  props_set(regexp_proto_obj.props, 
     "exec",
     property_data_non_enum(new_builtin_value(BuiltinFunction::RegExpExec)),
   )
-  regexp_proto_obj.props.set(
+  props_set(regexp_proto_obj.props, 
     "test",
     property_data_non_enum(new_builtin_value(BuiltinFunction::RegExpTest)),
   )
-  regexp_proto_obj.props.set(
+  props_set(regexp_proto_obj.props, 
     "toString",
     property_data_non_enum(new_builtin_value(BuiltinFunction::RegExpToString)),
   )
-  regexp_proto_obj.props.set(
+  props_set(regexp_proto_obj.props, 
     "compile",
     property_data_non_enum(new_builtin_value(BuiltinFunction::RegExpCompile)),
   )
@@ -128,214 +128,214 @@ fn init_date_proto(object_proto_obj : ObjectValue) -> (ObjectValue, Value) {
     _ => new_object_struct(Some(Object(object_proto_obj)))
   }
   set_proto_ref(date_proto_ref, Some(date_proto_obj))
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "toISOString",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateToISOString)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "toString",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateToString)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "valueOf",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateValueOf)),
   )
   let date_to_utc_func = new_builtin_value(BuiltinFunction::DateToUTCString)
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "toUTCString",
     property_data_non_enum(date_to_utc_func),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "toGMTString",
     property_data_non_enum(date_to_utc_func),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "toDateString",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateToDateString)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "toTimeString",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateToTimeString)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "toLocaleString",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateToLocaleString),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "toLocaleDateString",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateToLocaleDateString),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "toLocaleTimeString",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateToLocaleTimeString),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "toJSON",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateToJSON)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getTimezoneOffset",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateGetTimezoneOffset),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getTime",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetTime)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getYear",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetYear)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getFullYear",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetFullYear)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getUTCFullYear",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateGetUTCFullYear),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getMonth",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetMonth)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getUTCMonth",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetUTCMonth)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getDate",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetDate)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getUTCDate",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetUTCDate)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getDay",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetDay)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getUTCDay",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetUTCDay)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getHours",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetHours)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getUTCHours",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetUTCHours)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getMinutes",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetMinutes)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getUTCMinutes",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateGetUTCMinutes),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getSeconds",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateGetSeconds)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getUTCSeconds",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateGetUTCSeconds),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getMilliseconds",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateGetMilliseconds),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "getUTCMilliseconds",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateGetUTCMilliseconds),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setTime",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetTime)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setMilliseconds",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateSetMilliseconds),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setUTCMilliseconds",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateSetUTCMilliseconds),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setSeconds",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetSeconds)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setUTCSeconds",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateSetUTCSeconds),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setMinutes",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetMinutes)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setUTCMinutes",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateSetUTCMinutes),
     ),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setHours",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetHours)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setUTCHours",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetUTCHours)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setDate",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetDate)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setUTCDate",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetUTCDate)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setMonth",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetMonth)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setUTCMonth",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetUTCMonth)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setYear",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetYear)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setFullYear",
     property_data_non_enum(new_builtin_value(BuiltinFunction::DateSetFullYear)),
   )
-  date_proto_obj.props.set(
+  props_set(date_proto_obj.props, 
     "setUTCFullYear",
     property_data_non_enum(
       new_builtin_value(BuiltinFunction::DateSetUTCFullYear),

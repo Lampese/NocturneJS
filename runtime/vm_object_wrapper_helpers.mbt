@@ -37,6 +37,7 @@ fn new_string_object(
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto)
   Object(obj)
 }
 
@@ -79,6 +80,7 @@ fn new_number_object(
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto)
   Object(obj)
 }
 
@@ -134,6 +136,7 @@ fn new_bool_object(
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto)
   Object(obj)
 }
 
@@ -176,6 +179,7 @@ fn new_bigint_object(
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto)
   Object(obj)
 }
 
@@ -218,5 +222,7 @@ fn new_symbol_object(
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto)
+  rc_incref_value(Symbol(value))
   Object(obj)
 }

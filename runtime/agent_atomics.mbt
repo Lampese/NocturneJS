@@ -77,6 +77,18 @@ let atomics_notify_time_ref : Ref[Map[Int, Int64]] = Ref::new(Map::new())
 let atomics_waiter_token_prefix = "\u{00}atomics_waiter:"
 
 ///|
+fn rc_incref_agent_state(state : Test262AgentState) -> Unit {
+  rc_incref_env(state.env)
+  rc_incref_optional_value(state.broadcast_callback)
+}
+
+///|
+fn rc_decref_agent_state(state : Test262AgentState) -> Unit {
+  rc_decref_env(state.env)
+  rc_decref_optional_value(state.broadcast_callback)
+}
+
+///|
 fn current_agent_id() -> Int? {
   let mut value : Int? = None
   current_agent_id_ref.update(fn(current) {
@@ -138,8 +150,23 @@ fn agent_state_get(id : Int) -> Test262AgentState? {
 ///|
 fn agent_state_set(state : Test262AgentState) -> Unit {
   agent_table_ref.update(fn(table) {
+    match table.get(state.id) {
+      Some(existing) => rc_decref_agent_state(existing)
+      None => ()
+    }
+    rc_incref_agent_state(state)
     table.set(state.id, state)
     table
+  })
+}
+
+///|
+fn agent_table_clear() -> Unit {
+  agent_table_ref.update(fn(table) {
+    for _, state in table {
+      rc_decref_agent_state(state)
+    }
+    Map::new()
   })
 }
 

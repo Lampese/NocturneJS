@@ -111,7 +111,7 @@ fn eval_super_member_call(
 }
 
 ///|
-fn eval_super_call(env : Env, args : Array[@engine.Expr]) -> Value raise {
+fn super_call_with_args(env : Env, argv : Array[Value]) -> Value raise {
   let super_ctor = match current_super_function() {
     Some(func) =>
       if func.is_class_constructor && func.super_constructor is Some(_) {
@@ -127,7 +127,6 @@ fn eval_super_call(env : Env, args : Array[@engine.Expr]) -> Value raise {
       }
     None => throw_reference_error("super is not defined")
   }
-  let argv = eval_args(env, args)
   if !is_constructor_value(super_ctor) {
     return throw_not_constructor(super_ctor)
   }
@@ -151,4 +150,10 @@ fn eval_super_call(env : Env, args : Array[@engine.Expr]) -> Value raise {
     }
   }
   result
+}
+
+///|
+fn eval_super_call(env : Env, args : Array[@engine.Expr]) -> Value raise {
+  let argv = eval_args(env, args)
+  super_call_with_args(env, argv)
 }

@@ -6,8 +6,8 @@ fn new_module_binding_value(module_value : Value, name : String) -> Value raise 
   )
   match binding_value {
     Object(obj) => {
-      obj.props.set(module_binding_target_key, property_data_non_enum(target))
-      obj.props.set(
+      props_set(obj.props, module_binding_target_key, property_data_non_enum(target))
+      props_set(obj.props, 
         module_binding_name_key,
         property_data_non_enum(String(name)),
       )
@@ -90,8 +90,8 @@ fn module_meta_object(path : String, is_main : Bool) -> ObjectValue {
     _ => new_object_struct(None)
   }
   let url = if path.contains(":") { path } else { "file://" + path }
-  meta_obj.props.set("url", property_data(String(url)))
-  meta_obj.props.set("main", property_data(Bool(is_main)))
+  props_set(meta_obj.props, "url", property_data(String(url)))
+  props_set(meta_obj.props, "main", property_data(Bool(is_main)))
   meta_obj
 }
 

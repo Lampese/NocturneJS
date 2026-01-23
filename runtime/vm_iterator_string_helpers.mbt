@@ -5,8 +5,8 @@ fn new_string_iterator(value : Value) -> Value {
   )
   match iterator {
     Object(iter_obj) => {
-      iter_obj.props.set(string_iter_target_key, property_data_non_enum(value))
-      iter_obj.props.set(
+      props_set(iter_obj.props, string_iter_target_key, property_data_non_enum(value))
+      props_set(iter_obj.props, 
         string_iter_index_key,
         property_data_non_enum(Number(0.0)),
       )
@@ -47,7 +47,7 @@ fn string_iterator_next(this_value : Value?) -> Value raise {
   }
   let len = text.length()
   if index < 0 || index >= len {
-    iter_obj.props.set(
+    props_set(iter_obj.props, 
       string_iter_target_key,
       property_data_non_enum(Undefined),
     )
@@ -56,7 +56,7 @@ fn string_iterator_next(this_value : Value?) -> Value raise {
   match text.get_char(index) {
     Some(ch) => {
       let next_index = index + ch.utf16_len()
-      iter_obj.props.set(
+      props_set(iter_obj.props, 
         string_iter_index_key,
         property_data_non_enum(Number(Double::from_int(next_index))),
       )
@@ -65,7 +65,7 @@ fn string_iterator_next(this_value : Value?) -> Value raise {
     None => {
       let next_index = if index + 1 <= len { index + 1 } else { len }
       let part = text.unsafe_substring(start=index, end=next_index)
-      iter_obj.props.set(
+      props_set(iter_obj.props, 
         string_iter_index_key,
         property_data_non_enum(Number(Double::from_int(next_index))),
       )
@@ -86,20 +86,20 @@ fn new_regexp_string_iterator(
   )
   match iterator {
     Object(iter_obj) => {
-      iter_obj.props.set(regexp_iter_regexp_key, property_data_non_enum(regexp))
-      iter_obj.props.set(
+      props_set(iter_obj.props, regexp_iter_regexp_key, property_data_non_enum(regexp))
+      props_set(iter_obj.props, 
         regexp_iter_string_key,
         property_data_non_enum(String(input)),
       )
-      iter_obj.props.set(
+      props_set(iter_obj.props, 
         regexp_iter_global_key,
         property_data_non_enum(Bool(global)),
       )
-      iter_obj.props.set(
+      props_set(iter_obj.props, 
         regexp_iter_unicode_key,
         property_data_non_enum(Bool(unicode)),
       )
-      iter_obj.props.set(
+      props_set(iter_obj.props, 
         regexp_iter_done_key,
         property_data_non_enum(Bool(false)),
       )
@@ -157,7 +157,7 @@ fn regexp_string_iterator_next(this_value : Value?) -> Value raise {
   let match_value = regexp_exec_method(regexp_value, String(input))
   match match_value {
     Null => {
-      iter_obj.props.set(
+      props_set(iter_obj.props, 
         regexp_iter_done_key,
         property_data_non_enum(Bool(true)),
       )
@@ -181,7 +181,7 @@ fn regexp_string_iterator_next(this_value : Value?) -> Value raise {
 
         }
       } else {
-        iter_obj.props.set(
+        props_set(iter_obj.props, 
           regexp_iter_done_key,
           property_data_non_enum(Bool(true)),
         )

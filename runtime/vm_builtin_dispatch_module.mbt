@@ -62,7 +62,7 @@ fn call_builtin_module(
     }
     BuiltinFunction::ModuleImportDynamicJob => {
       match module_import_dynamic_job_data_take(builtin.id) {
-        Some(data) =>
+        Some(data) => {
           try {
             let module_value = match data.base_path {
               Some(path) =>
@@ -112,8 +112,13 @@ fn call_builtin_module(
               let _ = call_value_with_this(data.reject, [value], Undefined)
 
             }
-            err => raise err
+            err => {
+              module_import_dynamic_job_data_release(data)
+              raise err
+            }
           }
+          module_import_dynamic_job_data_release(data)
+        }
         None => ()
       }
       Undefined
@@ -240,7 +245,7 @@ fn call_builtin_module(
             }
             _ => ()
           }
-          exports.props.set(name, Property::{
+          props_set(exports.props, name, Property::{
             value: export_value,
             writable: false,
             configurable: false,
@@ -301,7 +306,7 @@ fn call_builtin_module(
                 }
                 if is_ambiguous {
                   if exports.props.contains(name) {
-                    exports.props.remove(name)
+                    props_remove(exports.props, name)
                   }
                   match module_path {
                     Some(path) => module_namespace_remove_export(path, name)
@@ -313,7 +318,7 @@ fn call_builtin_module(
                   continue
                 }
                 let value = new_module_binding_value(module_obj, name)
-                exports.props.set(name, Property::{
+                props_set(exports.props, name, Property::{
                   value,
                   writable: false,
                   configurable: false,

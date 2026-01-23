@@ -46,7 +46,10 @@ fn iterator_helper_create(
     value_from_object(iterator_helper_proto()),
   )
   match iterator {
-    Object(obj) =>
+    Object(obj) => {
+      rc_incref_value(target)
+      rc_incref_value(next_method)
+      rc_incref_value(func)
       obj.iterator_helper_data = Some(IteratorHelperData::{
         obj: target,
         next: next_method,
@@ -58,6 +61,7 @@ fn iterator_helper_create(
         executing: false,
         done: false,
       })
+    }
     _ => ()
   }
   iterator
@@ -175,7 +179,9 @@ fn iterator_helper_next(this_value : Value?) -> Value raise {
               }
             }
             if done {
+              rc_replace_value(data.inner, Undefined)
               data.inner = Undefined
+              rc_replace_value(data.inner_next, Undefined)
               data.inner_next = Undefined
               continue
             }
@@ -206,7 +212,9 @@ fn iterator_helper_next(this_value : Value?) -> Value raise {
               raise err
             }
           }
+          rc_replace_value(data.inner, inner_iter)
           data.inner = inner_iter
+          rc_replace_value(data.inner_next, inner_next)
           data.inner_next = inner_next
         }
         data.executing = false
@@ -239,7 +247,9 @@ fn iterator_helper_return(this_value : Value?) -> Value raise {
     }
     data.done = true
     let inner = data.inner
+    rc_replace_value(data.inner, Undefined)
     data.inner = Undefined
+    rc_replace_value(data.inner_next, Undefined)
     data.inner_next = Undefined
     if is_object_like(inner) {
       iterator_close(inner)
@@ -431,10 +441,10 @@ fn iterator_constructor_setter(
   let desc = new_object_value()
   match desc {
     Object(obj) => {
-      obj.props.set("value", property_data(value))
-      obj.props.set("writable", property_data(Bool(true)))
-      obj.props.set("enumerable", property_data(Bool(false)))
-      obj.props.set("configurable", property_data(Bool(true)))
+      props_set(obj.props, "value", property_data(value))
+      props_set(obj.props, "writable", property_data(Bool(true)))
+      props_set(obj.props, "enumerable", property_data(Bool(false)))
+      props_set(obj.props, "configurable", property_data(Bool(true)))
     }
     _ => ()
   }

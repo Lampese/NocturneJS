@@ -56,7 +56,7 @@ fn ensure_function_prototype(func : FunctionValue) -> Unit {
   match proto {
     Object(obj) =>
       if !func.is_generator {
-        obj.props.set(
+        props_set(obj.props, 
           "constructor",
           property_data_non_enum(Value::Function(func)),
         )
@@ -68,7 +68,7 @@ fn ensure_function_prototype(func : FunctionValue) -> Unit {
   } else {
     property_data_non_enum_non_config(proto)
   }
-  func.props.set("prototype", proto_prop)
+  props_set(func.props, "prototype", proto_prop)
 }
 
 ///|
@@ -88,12 +88,12 @@ fn to_function_value(
       None => len = len + 1
     }
   }
-  props.set("length", property_data_readonly(Number(Double::from_int(len))))
+  props_set(props, "length", property_data_readonly(Number(Double::from_int(len))))
   let name = match func.name {
     Some(value) => value
     None => ""
   }
-  props.set("name", property_data_readonly(String(name)))
+  props_set(props, "name", property_data_readonly(String(name)))
   let mut source_text : String? = None
   let mut source_root : String? = None
   let mut source_path : String? = None
@@ -147,7 +147,7 @@ fn to_function_value(
       None => ()
     }
   }
-  register_function_value(FunctionValue::{
+  let func_value = register_function_value(FunctionValue::{
     name: func.name,
     source: source_text,
     source_root,
@@ -199,6 +199,11 @@ fn to_function_value(
     is_arrow: func.is_arrow,
     in_class_field_init,
   })
+  rc_incref_env(env)
+  rc_incref_optional_value(func_value.proto)
+  rc_incref_optional_value(func_value.home_object)
+  rc_incref_optional_value(func_value.super_constructor)
+  func_value
 }
 
 ///|
@@ -245,8 +250,8 @@ fn new_bound_function(
     _ => ""
   }
   let props = Map::new()
-  props.set("length", property_data_readonly(Number(new_len_num)))
-  props.set("name", property_data_readonly(String("bound " + name)))
+  props_set(props, "length", property_data_readonly(Number(new_len_num)))
+  props_set(props, "name", property_data_readonly(String("bound " + name)))
   let proto = match function_realm_env(target) {
     Some(env) =>
       match function_proto_for_env(env) {
@@ -265,6 +270,10 @@ fn new_bound_function(
     is_constructor: is_constructor_value(target),
     extensible: true,
   })
+  rc_incref_value(target)
+  rc_incref_value(bound_this)
+  rc_incref_values(bound_args)
+  rc_incref_optional_value(proto)
   BoundFunction(bound)
 }
 
@@ -716,12 +725,12 @@ fn new_arguments_value(
     }
   }
   let props : Map[String, Property] = Map::new()
-  props.set("length", property_data_non_enum(Number(Double::from_int(arg_len))))
+  props_set(props, "length", property_data_non_enum(Number(Double::from_int(arg_len))))
   if is_strict || !mapped_allowed {
     let thrower = throw_type_error_value_for_env(env)
-    props.set("callee", property_accessor_non_config(thrower, thrower))
+    props_set(props, "callee", property_accessor_non_config(thrower, thrower))
   } else {
-    props.set("callee", property_data_non_enum(Value::Function(func)))
+    props_set(props, "callee", property_data_non_enum(Value::Function(func)))
   }
   let mut array_iterator_value : Value? = None
   match array_proto_for_env(env) {
@@ -746,9 +755,9 @@ fn new_arguments_value(
   match symbol_iterator_key() {
     Some(key) =>
       match array_iterator_value {
-        Some(value) => props.set(key, property_data_non_enum(value))
+        Some(value) => props_set(props, key, property_data_non_enum(value))
         None =>
-          props.set(
+          props_set(props, 
             key,
             property_data_non_enum(
               new_builtin_value(BuiltinFunction::ArrayValues),
@@ -757,6 +766,10 @@ fn new_arguments_value(
       }
     None => ()
   }
+  rc_incref_optional_values(elements)
+  rc_incref_env(env)
+  let proto_value = value_from_object(object_proto())
+  rc_incref_optional_value(proto_value)
   let args_value = register_arguments_value(ArgumentsValue::{
     id: alloc_id(),
     env,
@@ -764,7 +777,7 @@ fn new_arguments_value(
     mapped,
     elements,
     props,
-    proto: value_from_object(object_proto()),
+    proto: proto_value,
     extensible: true,
   })
   Arguments(args_value)
@@ -796,7 +809,19 @@ fn function_name_from_key(
 
 ///|
 fn set_function_name(func : FunctionValue, name : String) -> Unit {
-  func.props.set("name", property_data_readonly(String(name)))
+  props_set(func.props, "name", property_data_readonly(String(name)))
+}
+
+///|
+fn set_function_home_object(func : FunctionValue, value : Value?) -> Unit {
+  rc_replace_optional_value(func.home_object, value)
+  func.home_object = value
+}
+
+///|
+fn set_function_super_constructor(func : FunctionValue, value : Value?) -> Unit {
+  rc_replace_optional_value(func.super_constructor, value)
+  func.super_constructor = value
 }
 
 ///|

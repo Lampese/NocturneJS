@@ -60,12 +60,12 @@ fn build_template_object(
       let cooked_value = new_array_value(cooked)
       let raw_value = new_array_value(raw_parts)
       match cooked_value {
-        Array(arr) => arr.props.set("raw", property_data_non_enum(raw_value))
+        Array(arr) => props_set(arr.props, "raw", property_data_non_enum(raw_value))
         _ => ()
       }
       let _ = object_freeze(raw_value)
       let _ = object_freeze(cooked_value)
-      registry.set(parts.site_id, cooked_value)
+      template_registry_set(registry, parts.site_id, cooked_value)
       cooked_value
     }
   }

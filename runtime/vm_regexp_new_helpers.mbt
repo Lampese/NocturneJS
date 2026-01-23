@@ -32,7 +32,7 @@ fn new_regexp_value(
     value => value
   }
   let props = Map::new()
-  props.set("lastIndex", property_data_non_enum_non_config(Number(0.0)))
+  props_set(props, "lastIndex", property_data_non_enum_non_config(Number(0.0)))
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
     props,
@@ -67,5 +67,6 @@ fn new_regexp_value(
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto)
   Object(obj)
 }

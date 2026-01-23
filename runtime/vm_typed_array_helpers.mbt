@@ -74,6 +74,8 @@ fn new_typed_array_view(
     }),
     extensible: true,
   })
+  rc_incref_optional_value(proto_value)
+  rc_incref_value(Object(buffer))
   Array(arr)
 }
 
@@ -583,15 +585,17 @@ fn require_typed_array(value : Value?) -> (ArrayValue, TypedArrayData) raise {
       }
     _ => {
       let _ = throw_type_error("not a typed array")
+      let fallback = register_array_value(ArrayValue::{
+        id: alloc_id(),
+        elements: [],
+        proto: value_from_object(array_proto()),
+        props: Map::new(),
+        typed_array_data: None,
+        extensible: true,
+      })
+      rc_incref_optional_value(fallback.proto)
       (
-        register_array_value(ArrayValue::{
-          id: alloc_id(),
-          elements: [],
-          proto: value_from_object(array_proto()),
-          props: Map::new(),
-          typed_array_data: None,
-          extensible: true,
-        }),
+        fallback,
         TypedArrayData::{
           kind: TypedArrayKind::Uint8,
           buffer: new_object_struct(None),

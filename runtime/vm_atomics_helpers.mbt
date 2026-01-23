@@ -71,15 +71,17 @@ fn atomics_require_typed_array(
         Some(data) => atomics_require_typed_array(data.target, waitable_only)
         None => {
           let _ = throw_type_error("integer TypedArray expected")
+          let fallback = register_array_value(ArrayValue::{
+            id: alloc_id(),
+            elements: [],
+            proto: value_from_object(array_proto()),
+            props: Map::new(),
+            typed_array_data: None,
+            extensible: true,
+          })
+          rc_incref_optional_value(fallback.proto)
           (
-            register_array_value(ArrayValue::{
-              id: alloc_id(),
-              elements: [],
-              proto: value_from_object(array_proto()),
-              props: Map::new(),
-              typed_array_data: None,
-              extensible: true,
-            }),
+            fallback,
             TypedArrayData::{
               kind: TypedArrayKind::Uint8,
               buffer: new_object_struct(None),
@@ -93,15 +95,17 @@ fn atomics_require_typed_array(
       }
     _ => {
       let _ = throw_type_error("integer TypedArray expected")
+      let fallback = register_array_value(ArrayValue::{
+        id: alloc_id(),
+        elements: [],
+        proto: value_from_object(array_proto()),
+        props: Map::new(),
+        typed_array_data: None,
+        extensible: true,
+      })
+      rc_incref_optional_value(fallback.proto)
       (
-        register_array_value(ArrayValue::{
-          id: alloc_id(),
-          elements: [],
-          proto: value_from_object(array_proto()),
-          props: Map::new(),
-          typed_array_data: None,
-          extensible: true,
-        }),
+        fallback,
         TypedArrayData::{
           kind: TypedArrayKind::Uint8,
           buffer: new_object_struct(None),

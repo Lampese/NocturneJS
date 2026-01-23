@@ -135,7 +135,10 @@ fn set_copy_value(this_value : Value?) -> Value raise {
         Some(new_data) =>
           for entry in data.entries {
             match entry {
-              Some(value) => new_data.entries.push(Some(value))
+              Some(value) => {
+                rc_incref_value(value)
+                new_data.entries.push(Some(value))
+              }
               None => ()
             }
           }

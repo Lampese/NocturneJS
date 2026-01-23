@@ -8,8 +8,8 @@ fn init_object_and_function_proto(env : Env) -> (ObjectValue, Value, Value) {
   object_proto_obj.immutable_proto = true
   set_proto_ref(object_proto_ref, Some(object_proto_obj))
   let function_proto_props = Map::new()
-  function_proto_props.set("length", property_data_readonly(Number(0.0)))
-  function_proto_props.set("name", property_data_readonly(String("")))
+  props_set(function_proto_props, "length", property_data_readonly(Number(0.0)))
+  props_set(function_proto_props, "name", property_data_readonly(String("")))
   let function_proto_value = {
     let func = register_function_value(FunctionValue::{
       name: None,
@@ -41,48 +41,50 @@ fn init_object_and_function_proto(env : Env) -> (ObjectValue, Value, Value) {
       is_arrow: false,
       in_class_field_init: false,
     })
+    rc_incref_env(env)
+    rc_incref_optional_value(func.proto)
     Function(func)
   }
   set_value_ref(function_proto_ref, Some(function_proto_value))
   let throw_type_error = throw_type_error_value_for_env(env)
   match function_proto_value {
     Function(func) => {
-      func.props.set(
+      props_set(func.props, 
         "caller",
         property_accessor(throw_type_error, throw_type_error),
       )
-      func.props.set(
+      props_set(func.props, 
         "arguments",
         property_accessor(throw_type_error, throw_type_error),
       )
-      func.props.set(
+      props_set(func.props, 
         "call",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FunctionCall)),
       )
-      func.props.set(
+      props_set(func.props, 
         "apply",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::FunctionApply),
         ),
       )
-      func.props.set(
+      props_set(func.props, 
         "bind",
         property_data_non_enum(new_builtin_value(BuiltinFunction::FunctionBind)),
       )
-      func.props.set(
+      props_set(func.props, 
         "toString",
         property_data_non_enum(
           new_builtin_value(BuiltinFunction::FunctionToString),
         ),
       )
-      func.props.set(
+      props_set(func.props, 
         "lineNumber",
         property_accessor(
           new_builtin_value(BuiltinFunction::FunctionProtoLineNumber),
           Undefined,
         ),
       )
-      func.props.set(
+      props_set(func.props, 
         "columnNumber",
         property_accessor(
           new_builtin_value(BuiltinFunction::FunctionProtoColumnNumber),

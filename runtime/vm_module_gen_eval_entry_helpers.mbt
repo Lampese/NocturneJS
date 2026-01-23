@@ -18,6 +18,42 @@ fn gen_eval_module_body(
 }
 
 ///|
+fn module_eval_adjust_control(
+  env : Env,
+  result_value : Value,
+  control : GenControl,
+) -> GenControl {
+  match control {
+    Normal(_) => Normal(result_value)
+    Return(_) => Normal(result_value)
+    Break(_, _) =>
+      Throw(module_syntax_error_value(env, "illegal break"))
+    Continue(_, _) =>
+      Throw(module_syntax_error_value(env, "illegal continue"))
+    Throw(value) => Throw(value)
+  }
+}
+
+///|
+fn module_eval_adjust_step(
+  env : Env,
+  result_value : Value,
+  step : GenStep,
+) -> GenStep {
+  match step {
+    Yield(value, next_step) =>
+      Yield(value, fn(resume_state) raise {
+        module_eval_adjust_step(env, result_value, next_step(resume_state))
+      })
+    Await(value, next_step) =>
+      Await(value, fn(resume_state) raise {
+        module_eval_adjust_step(env, result_value, next_step(resume_state))
+      })
+    Done(control) => Done(module_eval_adjust_control(env, result_value, control))
+  }
+}
+
+///|
 fn module_eval_with_context_step(
   source_path : String,
   source_value : String,
@@ -104,20 +140,32 @@ fn module_async_eval(
   )
   let func_value = to_function_value(env, func_def, false)
   let top_level_func_decls = collect_top_level_function_decls(body)
-  let next_step = fn(_ : GenResume) raise {
-    let step = module_eval_with_context_step(
-      source_path,
-      source_value,
-      exports_obj,
-      env.id,
-      fn() raise {
-        let inner = with_top_level_function_decls_step(top_level_func_decls, fn() raise {
-          gen_eval_module_body(env, body, result_value)
-        })
-        top_level_function_decls_wrap_step(inner, top_level_func_decls)
-      },
-    )
-    module_eval_wrap_step(step, source_path, source_value, exports_obj, env.id)
+  let next_step = match bytecode_compile_function_body(func_value) {
+    Some(bytecode) => {
+      let state = bytecode_exec_state_new(env, bytecode)
+      fn(resume_state : GenResume) raise {
+        let step = module_eval_with_context_step(
+          source_path,
+          source_value,
+          exports_obj,
+          env.id,
+          fn() raise {
+            let inner =
+              with_top_level_function_decls_step(top_level_func_decls, fn() raise {
+                bytecode_exec_step(state, resume_state)
+              })
+            let wrapped =
+              top_level_function_decls_wrap_step(inner, top_level_func_decls)
+            module_eval_adjust_step(env, result_value, wrapped)
+          },
+        )
+        module_eval_wrap_step(step, source_path, source_value, exports_obj, env.id)
+      }
+    }
+    None => {
+      let _ = throw_type_error("bytecode compile failed")
+      fn(_ : GenResume) raise { Done(Normal(Undefined)) }
+    }
   }
   let gen_data = GeneratorData::{
     state: GeneratorState::SuspendedStart,
@@ -175,6 +223,9 @@ fn module_async_eval(
     immutable_proto: false,
     extensible: true,
   })
+  rc_incref_optional_value(proto_value)
+  rc_incref_env(env)
+  rc_incref_value(Function(func_value))
   let (promise, resolve, reject) = new_promise_capability(Undefined)
   async_function_data_set(obj.id, AsyncFunctionData::{ resolve, reject })
   async_function_resume(obj, GenResume::Next(Undefined))

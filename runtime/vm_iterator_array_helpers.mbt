@@ -5,12 +5,12 @@ fn new_array_iterator(obj : Value, kind : Int) -> Value {
   )
   match iterator {
     Object(iter_obj) => {
-      iter_obj.props.set(array_iter_target_key, property_data_non_enum(obj))
-      iter_obj.props.set(
+      props_set(iter_obj.props, array_iter_target_key, property_data_non_enum(obj))
+      props_set(iter_obj.props, 
         array_iter_index_key,
         property_data_non_enum(Number(0.0)),
       )
-      iter_obj.props.set(
+      props_set(iter_obj.props, 
         array_iter_kind_key,
         property_data_non_enum(Number(Double::from_int(kind))),
       )
@@ -94,7 +94,7 @@ fn array_iterator_next(this_value : Value?) -> Value raise {
     None => array_like_length(obj)
   }
   if index < 0 || index >= len {
-    iter_obj.props.set(array_iter_target_key, property_data_non_enum(Undefined))
+    props_set(iter_obj.props, array_iter_target_key, property_data_non_enum(Undefined))
     return iterator_result(Undefined, true)
   }
   let key = Number(Double::from_int(index))
@@ -106,7 +106,7 @@ fn array_iterator_next(this_value : Value?) -> Value raise {
   } else {
     new_array_value([Some(key), Some(value)])
   }
-  iter_obj.props.set(
+  props_set(iter_obj.props, 
     array_iter_index_key,
     property_data_non_enum(Number(Double::from_int(index + 1))),
   )

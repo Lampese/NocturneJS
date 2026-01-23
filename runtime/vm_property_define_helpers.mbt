@@ -219,7 +219,7 @@ fn define_property_value(
               if index >= 0 &&
                 index < value.length() &&
                 !obj.props.contains(name) {
-                obj.props.set(name, Property::{
+                props_set(obj.props, name, Property::{
                   value: String(
                     value.unsafe_substring(start=index, end=index + 1),
                   ),
@@ -433,7 +433,7 @@ fn arguments_define_property(
       if index >= 0 && index < args.elements.length() {
         if !args.props.contains(name) {
           let current = arguments_index_value(args, index)
-          args.props.set(name, property_data(current))
+          props_set(args.props, name, property_data(current))
         }
         let mut mapped = false
         if index < args.mapped.length() &&
@@ -448,7 +448,7 @@ fn arguments_define_property(
           match args.props.get(name) {
             Some(prop) =>
               if prop.getter is None && prop.setter is None {
-                args.props.set(name, Property::{
+                props_set(args.props, name, Property::{
                   value: current,
                   writable: prop.writable,
                   configurable: prop.configurable,
@@ -471,6 +471,7 @@ fn arguments_define_property(
             args.mapped[index] = false
           }
         }
+        rc_replace_optional_value(args.elements[index], None)
         args.elements[index] = None
       } else {
         define_property_in(args.props, name, desc_info)
@@ -566,7 +567,7 @@ fn define_array_property(
             let len_value = Number(
               Int64::to_double(array_length_from_props(arr)),
             )
-            arr.props.set("length", Property::{
+            props_set(arr.props, "length", Property::{
               value: len_value,
               writable: false,
               configurable: false,
@@ -582,7 +583,7 @@ fn define_array_property(
       None => ()
     }
     let len_value = Number(Int64::to_double(array_length_from_props(arr)))
-    arr.props.set("length", Property::{
+    props_set(arr.props, "length", Property::{
       value: len_value,
       writable,
       configurable: false,
@@ -630,7 +631,7 @@ fn define_array_property(
         index64 < Int64::from_int(arr.elements.length()) {
         let index = Int64::to_int(index64)
         match arr.elements[index] {
-          Some(value) => arr.props.set(name, property_data(value))
+          Some(value) => props_set(arr.props, name, property_data(value))
           None => ()
         }
       }
@@ -699,7 +700,7 @@ fn define_property_in(
     value = Undefined
     writable = false
   }
-  props.set(name, Property::{
+  props_set(props, name, Property::{
     value,
     writable,
     configurable,

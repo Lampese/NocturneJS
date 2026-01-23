@@ -208,7 +208,10 @@ fn call_constructor(
                 new_target, fallback_proto,
               )
               match func_value {
-                Function(func) => func.proto = proto
+                Function(func) => {
+                  rc_replace_optional_value(func.proto, proto)
+                  func.proto = proto
+                }
                 _ => ()
               }
             }
@@ -240,7 +243,10 @@ fn call_constructor(
                 new_target, fallback_proto,
               )
               match func_value {
-                Function(func) => func.proto = proto
+                Function(func) => {
+                  rc_replace_optional_value(func.proto, proto)
+                  func.proto = proto
+                }
                 _ => ()
               }
             }
@@ -272,7 +278,10 @@ fn call_constructor(
                 new_target, fallback_proto,
               )
               match func_value {
-                Function(func) => func.proto = proto
+                Function(func) => {
+                  rc_replace_optional_value(func.proto, proto)
+                  func.proto = proto
+                }
                 _ => ()
               }
             }
@@ -304,7 +313,10 @@ fn call_constructor(
                 new_target, fallback_proto,
               )
               match func_value {
-                Function(func) => func.proto = proto
+                Function(func) => {
+                  rc_replace_optional_value(func.proto, proto)
+                  func.proto = proto
+                }
                 _ => ()
               }
             }

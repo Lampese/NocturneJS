@@ -73,9 +73,9 @@ fn regexp_exec_value(
       let result = new_array_value(elements)
       match result {
         Array(arr) => {
-          arr.props.set("index", property_data(Number(Double::from_int(start))))
-          arr.props.set("input", property_data(String(input)))
-          arr.props.set("groups", property_data(groups_value))
+          props_set(arr.props, "index", property_data(Number(Double::from_int(start))))
+          props_set(arr.props, "input", property_data(String(input)))
+          props_set(arr.props, "groups", property_data(groups_value))
           if exec_data.has_indices {
             let indices = build_regexp_indices(
               start,
@@ -83,7 +83,7 @@ fn regexp_exec_value(
               match_value.indices,
               exec_data.regex.capture_names,
             )
-            arr.props.set("indices", property_data(indices))
+            props_set(arr.props, "indices", property_data(indices))
           }
         }
         _ => ()
@@ -135,7 +135,7 @@ fn build_regexp_groups(
           _ => Undefined
         }
         if !(value is Undefined) || !groups_obj.props.contains(name) {
-          groups_obj.props.set(name, property_data(value))
+          props_set(groups_obj.props, name, property_data(value))
         }
       }
       None => ()
@@ -186,7 +186,7 @@ fn build_regexp_indices(
     match (groups_obj, capture_names.get(i)) {
       (Some(obj), Some(Some(name))) =>
         if !(val is Undefined) || !obj.props.contains(name) {
-          obj.props.set(name, property_data(val))
+          props_set(obj.props, name, property_data(val))
         }
       _ => ()
     }
@@ -194,7 +194,7 @@ fn build_regexp_indices(
   }
   let indices_value = new_array_value(values)
   match indices_value {
-    Array(arr) => arr.props.set("groups", property_data(groups_value))
+    Array(arr) => props_set(arr.props, "groups", property_data(groups_value))
     _ => ()
   }
   indices_value

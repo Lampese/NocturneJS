@@ -72,28 +72,11 @@ fn declare_var_binding_names(
 
 ///|
 fn has_outer_non_global_var_binding(env : Env, name : String) -> Bool {
-  let mut current : Env? = Some(env)
-  while true {
-    match current {
-      Some(frame) => {
-        if frame.is_catch_env && frame.bindings.get(name) is Some(_) {
-          return true
-        }
-        match frame.var_env {
-          Some(var_env) =>
-            if var_env.id == frame.id && frame.parent is Some(_) {
-              if frame.bindings.get(name) is Some(_) {
-                return true
-              }
-            }
-          None => ()
-        }
-        current = frame.parent
-      }
-      None => break
-    }
+  let var_env = var_env_for(env)
+  match var_env.parent {
+    None => false
+    Some(_) => var_env.bindings.get(name) is Some(_)
   }
-  false
 }
 
 ///|

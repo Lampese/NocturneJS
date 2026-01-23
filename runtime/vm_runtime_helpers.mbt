@@ -49,8 +49,8 @@ fn realm_env_from_env(env : Env) -> Env {
 ///|
 fn new_throw_type_error_value_for_env(env : Env) -> Value {
   let props = Map::new()
-  props.set("length", property_data_const(Number(Double::from_int(0))))
-  props.set("name", property_data_const(String("")))
+  props_set(props, "length", property_data_const(Number(Double::from_int(0))))
+  props_set(props, "name", property_data_const(String("")))
   let proto = match function_proto_for_env(env) {
     Some(value) => Some(value)
     None => function_proto()
@@ -65,6 +65,8 @@ fn new_throw_type_error_value_for_env(env : Env) -> Value {
     is_html_dda: false,
     realm_env: Some(env),
   })
+  rc_incref_optional_value(proto)
+  rc_incref_optional_env(Some(env))
   Builtin(builtin)
 }
 
@@ -80,10 +82,7 @@ fn throw_type_error_value_for_env(env : Env) -> Value {
     Some(existing) => existing
     None => {
       let created = new_throw_type_error_value_for_env(realm_env)
-      throw_type_error_ref.update(fn(table) {
-        table.set(realm_env.id, created)
-        table
-      })
+      throw_type_error_set(realm_env.id, created)
       created
     }
   }
@@ -108,6 +107,55 @@ fn template_registry_for_env(env : Env) -> Map[Int, Value] {
       created
     }
   }
+}
+
+///|
+fn throw_type_error_set(env_id : Int, value : Value) -> Unit {
+  throw_type_error_ref.update(fn(table) {
+    match table.get(env_id) {
+      Some(existing) => rc_decref_value(existing)
+      None => ()
+    }
+    rc_incref_value(value)
+    table.set(env_id, value)
+    table
+  })
+}
+
+///|
+fn throw_type_error_clear() -> Unit {
+  throw_type_error_ref.update(fn(table) {
+    for _, value in table {
+      rc_decref_value(value)
+    }
+    Map::new()
+  })
+}
+
+///|
+fn template_registry_set(
+  registry : Map[Int, Value],
+  site_id : Int,
+  value : Value,
+) -> Unit {
+  match registry.get(site_id) {
+    Some(existing) => rc_decref_value(existing)
+    None => ()
+  }
+  rc_incref_value(value)
+  registry.set(site_id, value)
+}
+
+///|
+fn template_registry_clear() -> Unit {
+  template_registry_ref.update(fn(table) {
+    for _, registry in table {
+      for _, value in registry {
+        rc_decref_value(value)
+      }
+    }
+    Map::new()
+  })
 }
 
 ///|

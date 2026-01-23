@@ -80,7 +80,7 @@ fn module_import_from_specifier(
               Object(obj) => obj
               _ => new_object_struct(None)
             }
-            exports_obj.props.set("default", property_data(json_value))
+            props_set(exports_obj.props, "default", property_data(json_value))
             exports_obj.extensible = false
             let mut module_ns : ObjectValue? = None
             match module_namespace_from_value(Object(exports_obj)) {
@@ -286,7 +286,7 @@ fn module_namespace_from_value(value : Value) -> ObjectValue? raise {
           let names = module_namespace_prop_keys(props, false)
           for name in names {
             let prop_value = new_module_binding_value(target, name)
-            namespace_obj.props.set(name, Property::{
+            props_set(namespace_obj.props, name, Property::{
               value: prop_value,
               writable: false,
               configurable: false,
@@ -300,7 +300,7 @@ fn module_namespace_from_value(value : Value) -> ObjectValue? raise {
       }
       match symbol_to_string_tag_key() {
         Some(key) =>
-          namespace_obj.props.set(key, property_data_const(String("Module")))
+          props_set(namespace_obj.props, key, property_data_const(String("Module")))
         None => ()
       }
       namespace_obj.extensible = false
@@ -322,7 +322,7 @@ fn module_namespace_add_export(
         Some(namespace_obj) =>
           if !namespace_obj.props.contains(name) {
             let prop_value = new_module_binding_value(Object(exports), name)
-            namespace_obj.props.set(name, Property::{
+            props_set(namespace_obj.props, name, Property::{
               value: prop_value,
               writable: false,
               configurable: false,
@@ -344,7 +344,7 @@ fn module_namespace_remove_export(path : String, name : String) -> Unit {
       match record.module_ns {
         Some(namespace_obj) =>
           if namespace_obj.props.contains(name) {
-            namespace_obj.props.remove(name)
+            props_remove(namespace_obj.props, name)
           }
         None => ()
       }
@@ -439,7 +439,7 @@ fn module_attributes_from_object(attributes_obj : Value) -> Value raise {
       }
     }
     match attrs_value {
-      Object(obj) => obj.props.set(key, property_data(value))
+      Object(obj) => props_set(obj.props, key, property_data(value))
       _ => ()
     }
   }

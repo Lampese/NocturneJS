@@ -85,11 +85,11 @@ fn array_set_length_int64(
     }
   }
   for key in to_remove {
-    arr.props.remove(key)
+    props_remove(arr.props, key)
   }
   if final_len <= Int64::from_int(arr.elements.length()) {
     let final_int = Int64::to_int(final_len)
-    arr.elements.truncate(final_int)
+    rc_truncate_optional_values(arr.elements, final_int)
   }
   set_length_prop(arr.props, Number(Int64::to_double(final_len)))
   final_len == target_len
@@ -172,6 +172,7 @@ fn array_set(arr : ArrayValue, name : String, value : Value) -> Bool raise {
             return set_property_in(arr.props, name, value, receiver)
           }
           if index < arr.elements.length() {
+            rc_replace_optional_value(arr.elements[index], Some(value))
             arr.elements[index] = Some(value)
           }
           let current_len = array_length_from_props(arr)
@@ -196,8 +197,10 @@ fn array_set(arr : ArrayValue, name : String, value : Value) -> Bool raise {
           arr.elements.push(None)
         }
         if index == arr.elements.length() {
+          rc_incref_value(value)
           arr.elements.push(Some(value))
         } else {
+          rc_replace_optional_value(arr.elements[index], Some(value))
           arr.elements[index] = Some(value)
         }
         let current_len = array_length_from_props(arr)
@@ -229,7 +232,7 @@ fn array_set(arr : ArrayValue, name : String, value : Value) -> Bool raise {
 fn set_length_prop(props : Map[String, Property], value : Value) -> Unit {
   match props.get("length") {
     Some(prop) =>
-      props.set("length", Property::{
+      props_set(props, "length", Property::{
         value,
         writable: prop.writable,
         configurable: false,
@@ -237,7 +240,7 @@ fn set_length_prop(props : Map[String, Property], value : Value) -> Unit {
         getter: None,
         setter: None,
       })
-    None => props.set("length", property_data_non_enum_non_config(value))
+    None => props_set(props, "length", property_data_non_enum_non_config(value))
   }
 }
 
@@ -280,7 +283,7 @@ fn array_proto_set_length(obj : ObjectValue, value : Value) -> Bool raise {
             set_length_prop(obj.props, Number(Double::from_int(final_len)))
             return false
           } else {
-            obj.props.remove(index_name)
+            props_remove(obj.props, index_name)
           }
         None => ()
       }

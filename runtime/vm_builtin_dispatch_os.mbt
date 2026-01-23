@@ -146,8 +146,8 @@ fn call_builtin_os(builtin : BuiltinValue, args : Array[Value]) -> Value raise {
       let stat = new_object_value()
       match stat {
         Object(obj) => {
-          obj.props.set("mode", property_data(Number(Double::from_int(mode))))
-          obj.props.set("mtime", property_data(Number(mtime.to_double())))
+          props_set(obj.props, "mode", property_data(Number(Double::from_int(mode))))
+          props_set(obj.props, "mtime", property_data(Number(mtime.to_double())))
         }
         _ => ()
       }
@@ -176,8 +176,8 @@ fn call_builtin_os(builtin : BuiltinValue, args : Array[Value]) -> Value raise {
       let stat = new_object_value()
       match stat {
         Object(obj) => {
-          obj.props.set("mode", property_data(Number(Double::from_int(mode))))
-          obj.props.set("mtime", property_data(Number(mtime.to_double())))
+          props_set(obj.props, "mode", property_data(Number(Double::from_int(mode))))
+          props_set(obj.props, "mtime", property_data(Number(mtime.to_double())))
         }
         _ => ()
       }
@@ -324,11 +324,7 @@ fn call_builtin_os(builtin : BuiltinValue, args : Array[Value]) -> Value raise {
       } else {
         Some(exit_code << 8)
       }
-      let running = match status {
-        Some(_) => false
-        None => true
-      }
-      let pid = spawn_process(status, running, stdout_fd)
+      let pid = spawn_process(status)
       Number(Double::from_int(pid))
     }
     BuiltinFunction::OsPipe => {
@@ -371,7 +367,6 @@ fn call_builtin_os(builtin : BuiltinValue, args : Array[Value]) -> Value raise {
       match get_process(pid) {
         Some(proc) => {
           proc.status = Some(sig)
-          proc.running = false
           set_process(pid, Some(proc))
           Number(0.0)
         }

@@ -4,7 +4,6 @@ fn run_gc_internal(remove_weak : Bool) -> Unit {
   let state = new_gc_state()
   gc_prepare_meta(state)
   gc_count_roots(state)
-  gc_count_internal_refs(state)
   gc_debug_dump_assert_meta(state, "pre")
   if remove_weak {
     gc_remove_weak_objects(state)
