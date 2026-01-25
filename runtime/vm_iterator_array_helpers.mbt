@@ -98,7 +98,25 @@ fn array_iterator_next(this_value : Value?) -> Value raise {
     return iterator_result(Undefined, true)
   }
   let key = Number(Double::from_int(index))
-  let value = property_get(obj, Int::to_string(index))
+  let key_name = Int::to_string(index)
+  let mut fast_value : Value? = None
+  match obj {
+    Array(arr) =>
+      if arr.typed_array_data is None {
+        if !props_contains(arr.props, key_name) &&
+          index < arr.elements.length() {
+          match arr.elements[index] {
+            Some(found) => fast_value = Some(found)
+            None => ()
+          }
+        }
+      }
+    _ => ()
+  }
+  let value = match fast_value {
+    Some(found) => found
+    None => property_get(obj, key_name)
+  }
   let result = if kind == 0 {
     key
   } else if kind == 1 {

@@ -25,6 +25,35 @@ fn to_property_key_value(value : Value) -> Value raise {
 }
 
 ///|
+fn array_index_from_key_value_raw(value : Value) -> Int64? {
+  match value {
+    Number(num) =>
+      if Double::is_nan(num) || Double::is_inf(num) {
+        None
+      } else {
+        let trunc = Double::trunc(num)
+        if trunc != num {
+          None
+        } else if trunc < 0.0 ||
+          trunc > Int64::to_double(max_array_index) {
+          None
+        } else {
+          Some(Double::to_int64(trunc))
+        }
+      }
+    _ => None
+  }
+}
+
+///|
+fn array_index_from_key_value(value : Value) -> (Int64, String)? {
+  match array_index_from_key_value_raw(value) {
+    Some(index) => Some((index, Int64::to_string(index)))
+    None => None
+  }
+}
+
+///|
 fn member_key_name(env : Env, key : @engine.MemberKey) -> String raise {
   match key {
     @engine.MemberKey::Ident(name) => name

@@ -16,6 +16,22 @@ fn bytecode_stack_peek(stack : Array[Value]) -> Value {
 }
 
 ///|
+priv struct PropCacheEntry {
+  kind : Int
+  shape_id : Int
+  version : Int
+  index : Int
+  proto_id : Int
+  proto_version : Int
+}
+
+///|
+const PROP_CACHE_OWN : Int = 0
+
+///|
+const PROP_CACHE_PROTO : Int = 1
+
+///|
 fn bytecode_fast_get_prop(target : Value, name : String) -> Value? raise {
   match target {
     Object(obj) =>
@@ -33,6 +49,159 @@ fn bytecode_fast_get_prop(target : Value, name : String) -> Value? raise {
       }
     _ => None
   }
+}
+
+///|
+fn bytecode_get_prop_cached(
+  cache : Array[PropCacheEntry?],
+  cache_index : Int,
+  target : Value,
+  name : String,
+) -> Value? raise {
+  match target {
+    Object(obj) =>
+      if obj.proxy_data is None &&
+        obj.string_data is None &&
+        !obj.is_module_namespace {
+        let props = obj.props
+        let shape_id = match props_shape_id(props) {
+          Some(value) => value
+          None => return None
+        }
+        let version = props_version(props)
+        match cache[cache_index] {
+          Some(entry) =>
+            if entry.shape_id == shape_id && entry.version == version {
+              if entry.kind == PROP_CACHE_OWN {
+                match props_get_data_slot_value(props, entry.index) {
+                  Some(value) => return Some(value)
+                  None => ()
+                }
+              } else if entry.kind == PROP_CACHE_PROTO {
+                match obj.proto {
+                  Some(Object(proto_obj)) =>
+                    if proto_obj.id == entry.proto_id &&
+                      props_version(proto_obj.props) == entry.proto_version {
+                      match props_get_data_slot_value(proto_obj.props, entry.index) {
+                        Some(value) => return Some(value)
+                        None => ()
+                      }
+                    }
+                  _ => ()
+                }
+              }
+            }
+          None => ()
+        }
+        match props_get_data_slot(props, name) {
+          Some((index, _, value)) => {
+            cache[cache_index] =
+              Some(PropCacheEntry::{
+                kind: PROP_CACHE_OWN,
+                shape_id,
+                version,
+                index,
+                proto_id: -1,
+                proto_version: 0,
+              })
+            return Some(value)
+          }
+          None => ()
+        }
+        match obj.proto {
+          Some(Object(proto_obj)) =>
+            if proto_obj.proxy_data is None &&
+              proto_obj.string_data is None &&
+              !proto_obj.is_module_namespace {
+              let proto_props = proto_obj.props
+              let proto_version = props_version(proto_props)
+              match props_get_data_slot(proto_props, name) {
+                Some((index, _, value)) => {
+                  cache[cache_index] =
+                    Some(PropCacheEntry::{
+                      kind: PROP_CACHE_PROTO,
+                      shape_id,
+                      version,
+                      index,
+                      proto_id: proto_obj.id,
+                      proto_version,
+                    })
+                  return Some(value)
+                }
+                None => ()
+              }
+            }
+          _ => ()
+        }
+      }
+    _ => ()
+  }
+  None
+}
+
+///|
+fn bytecode_set_prop_cached(
+  cache : Array[PropCacheEntry?],
+  cache_index : Int,
+  target : Value,
+  name : String,
+  value : Value,
+) -> Bool {
+  match target {
+    Object(obj) =>
+      if obj.proxy_data is None &&
+        obj.string_data is None &&
+        !obj.is_module_namespace {
+        let props = obj.props
+        let shape_id = match props_shape_id(props) {
+          Some(value) => value
+          None => return false
+        }
+        let version = props_version(props)
+        match cache[cache_index] {
+          Some(entry) =>
+            if entry.kind == PROP_CACHE_OWN &&
+              entry.shape_id == shape_id &&
+              entry.version == version {
+              if props_set_data_slot_value(props, entry.index, value) {
+                let new_version = props_version(props)
+                cache[cache_index] =
+                  Some(PropCacheEntry::{
+                    kind: PROP_CACHE_OWN,
+                    shape_id,
+                    version: new_version,
+                    index: entry.index,
+                    proto_id: -1,
+                    proto_version: 0,
+                  })
+                return true
+              }
+            }
+          None => ()
+        }
+        match props_get_data_slot(props, name) {
+          Some((index, writable, _)) =>
+            if writable {
+              if props_set_data_slot_value(props, index, value) {
+                let new_version = props_version(props)
+                cache[cache_index] =
+                  Some(PropCacheEntry::{
+                    kind: PROP_CACHE_OWN,
+                    shape_id,
+                    version: new_version,
+                    index,
+                    proto_id: -1,
+                    proto_version: 0,
+                  })
+                return true
+              }
+            }
+          None => ()
+        }
+      }
+    _ => ()
+  }
+  false
 }
 
 ///|
@@ -568,6 +737,7 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
       let finally_stack = state.finally_stack
       let try_stack = state.try_stack
       let env_stack = state.env_stack
+      let prop_cache = state.prop_cache
       let code = func.code
       let cpool = func.cpool
       let func_pool = func.func_pool
@@ -641,19 +811,140 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
             BytecodeOp::GetElem => {
               let key_value = bytecode_stack_pop(stack)
               let target = bytecode_stack_pop(stack)
-              let target_obj = to_object(target)
-              let name = property_key_name(key_value)
-              stack.push(property_get_with_receiver(target_obj, name, target))
+              match array_index_from_key_value_raw(key_value) {
+                Some(index) =>
+                  match target {
+                    Array(arr) => {
+                      let mut name : String? = None
+                      let mut fast_value : Value? = None
+                      match arr.typed_array_data {
+                        Some(_) => ()
+                        None => {
+                          let elements_len = Int64::from_int(arr.elements.length())
+                          if index < elements_len {
+                            let elem_index = Int64::to_int(index)
+                            if props_has_only_length(arr.props) {
+                              match arr.elements[elem_index] {
+                                Some(value) => fast_value = Some(value)
+                                None => ()
+                              }
+                            } else {
+                              let name_value = Int64::to_string(index)
+                              name = Some(name_value)
+                              if !props_contains(arr.props, name_value) {
+                                match arr.elements[elem_index] {
+                                  Some(value) => fast_value = Some(value)
+                                  None => ()
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      match fast_value {
+                        Some(value) => stack.push(value)
+                        None => {
+                          let name_value = match name {
+                            Some(value) => value
+                            None => Int64::to_string(index)
+                          }
+                          stack.push(
+                            property_get_with_receiver(target, name_value, target),
+                          )
+                        }
+                      }
+                    }
+                    Arguments(_) => {
+                      let name = Int64::to_string(index)
+                      stack.push(
+                        property_get_with_receiver(target, name, target),
+                      )
+                    }
+                    _ => {
+                      let target_obj = to_object(target)
+                      let name = property_key_name(key_value)
+                      stack.push(
+                        property_get_with_receiver(target_obj, name, target),
+                      )
+                    }
+                  }
+                None => {
+                  let target_obj = to_object(target)
+                  let name = property_key_name(key_value)
+                  stack.push(property_get_with_receiver(target_obj, name, target))
+                }
+              }
             }
             BytecodeOp::GetElemRef => {
               let key_value = bytecode_stack_pop(stack)
               let target = bytecode_stack_pop(stack)
-              let target_obj = to_object(target)
-              let name = property_key_name(key_value)
-              let current = property_get_with_receiver(target_obj, name, target)
-              stack.push(target)
-              stack.push(String(name))
-              stack.push(current)
+              match array_index_from_key_value_raw(key_value) {
+                Some(index) =>
+                  match target {
+                    Array(arr) => {
+                      let name = Int64::to_string(index)
+                      let mut fast_value : Value? = None
+                      match arr.typed_array_data {
+                        Some(_) => ()
+                        None =>
+                          if props_has_only_length(arr.props) ||
+                            !props_contains(arr.props, name) {
+                            let elements_len = Int64::from_int(arr.elements.length())
+                            if index < elements_len {
+                              let elem_index = Int64::to_int(index)
+                              match arr.elements[elem_index] {
+                                Some(value) => fast_value = Some(value)
+                                None => ()
+                              }
+                            }
+                          }
+                      }
+                      let current = match fast_value {
+                        Some(value) => value
+                        None =>
+                          property_get_with_receiver(
+                            target,
+                            name,
+                            target,
+                          )
+                      }
+                      stack.push(target)
+                      stack.push(String(name))
+                      stack.push(current)
+                    }
+                    Arguments(_) => {
+                      let name = Int64::to_string(index)
+                      let current = property_get_with_receiver(
+                        target,
+                        name,
+                        target,
+                      )
+                      stack.push(target)
+                      stack.push(String(name))
+                      stack.push(current)
+                    }
+                    _ => {
+                      let target_obj = to_object(target)
+                      let name = property_key_name(key_value)
+                      let current = property_get_with_receiver(
+                        target_obj,
+                        name,
+                        target,
+                      )
+                      stack.push(target)
+                      stack.push(String(name))
+                      stack.push(current)
+                    }
+                  }
+                None => {
+                  let target_obj = to_object(target)
+                  let name = property_key_name(key_value)
+                  let current = property_get_with_receiver(target_obj, name, target)
+                  stack.push(target)
+                  stack.push(String(name))
+                  stack.push(current)
+                }
+              }
             }
             BytecodeOp::ToPropertyKey => {
               let key_value = bytecode_stack_pop(stack)
@@ -804,9 +1095,48 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
               let value = bytecode_stack_pop(stack)
               let key_value = bytecode_stack_pop(stack)
               let target = bytecode_stack_pop(stack)
-              let _ = to_object(target)
-              let name = property_key_name(key_value)
-              stack.push(set_property_for_value(target, name, value, env.strict))
+              match array_index_from_key_value(key_value) {
+                Some((_, name)) =>
+                  match target {
+                    Array(_) =>
+                      stack.push(
+                        set_property_for_value(
+                          target,
+                          name,
+                          value,
+                          env.strict,
+                        ),
+                      )
+                    Arguments(_) =>
+                      stack.push(
+                        set_property_for_value(
+                          target,
+                          name,
+                          value,
+                          env.strict,
+                        ),
+                      )
+                    _ => {
+                      let _ = to_object(target)
+                      let name = property_key_name(key_value)
+                      stack.push(
+                        set_property_for_value(
+                          target,
+                          name,
+                          value,
+                          env.strict,
+                        ),
+                      )
+                    }
+                  }
+                None => {
+                  let _ = to_object(target)
+                  let name = property_key_name(key_value)
+                  stack.push(
+                    set_property_for_value(target, name, value, env.strict),
+                  )
+                }
+              }
             }
             BytecodeOp::CheckSuperThis => {
               let _ = env_get(env, "this")
@@ -829,9 +1159,24 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
             BytecodeOp::DeleteElem => {
               let key_value = bytecode_stack_pop(stack)
               let target = bytecode_stack_pop(stack)
-              let name = property_key_name(key_value)
-              let result = delete_property(env, target, name)
-              stack.push(result)
+              match array_index_from_key_value(key_value) {
+                Some((_, name)) =>
+                  match target {
+                    Array(_) => stack.push(delete_property(env, target, name))
+                    Arguments(_) =>
+                      stack.push(delete_property(env, target, name))
+                    _ => {
+                      let name = property_key_name(key_value)
+                      let result = delete_property(env, target, name)
+                      stack.push(result)
+                    }
+                  }
+                None => {
+                  let name = property_key_name(key_value)
+                  let result = delete_property(env, target, name)
+                  stack.push(result)
+                }
+              }
             }
             BytecodeOp::NewObject => {
               stack.push(new_object_value())
@@ -2012,14 +2357,24 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
                     match const_value {
                       String(name) => {
                         let target = bytecode_stack_pop(stack)
+                        let cache_index = pc - 1
                         match bytecode_fast_get_prop(target, name) {
                           Some(value) => stack.push(value)
-                          None => {
-                            let target_obj = to_object(target)
-                            stack.push(
-                              property_get_with_receiver(target_obj, name, target),
-                            )
-                          }
+                          None =>
+                            match bytecode_get_prop_cached(
+                              prop_cache,
+                              cache_index,
+                              target,
+                              name,
+                            ) {
+                              Some(value) => stack.push(value)
+                              None => {
+                                let target_obj = to_object(target)
+                                stack.push(
+                                  property_get_with_receiver(target_obj, name, target),
+                                )
+                              }
+                            }
                         }
                       }
                       _ => {
@@ -2042,9 +2397,25 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
                       String(name) => {
                         let value = bytecode_stack_pop(stack)
                         let target = bytecode_stack_pop(stack)
-                        stack.push(
-                          set_property_for_value(target, name, value, env.strict),
-                        )
+                        let cache_index = pc - 1
+                        if bytecode_set_prop_cached(
+                          prop_cache,
+                          cache_index,
+                          target,
+                          name,
+                          value,
+                        ) {
+                          stack.push(value)
+                        } else {
+                          stack.push(
+                            set_property_for_value(
+                              target,
+                              name,
+                              value,
+                              env.strict,
+                            ),
+                          )
+                        }
                       }
                       _ => {
                         let _ = throw_type_error("invalid bytecode property name")
@@ -2419,6 +2790,7 @@ priv struct BytecodeExecState {
   finally_stack : Array[BytecodeFinallyState]
   try_stack : Array[BytecodeTryEntry]
   env_stack : Array[Env]
+  prop_cache : Array[PropCacheEntry?]
   mut pc : Int
   mut resume_pending : Bool
   mut finally_body_depth : Int
@@ -2525,6 +2897,13 @@ fn bytecode_visit_roots(visit_value : (Value) -> Unit) -> Unit {
 
 ///|
 fn bytecode_exec_state_new(env : Env, func : BytecodeFunction) -> BytecodeExecState {
+  let prop_cache : Array[PropCacheEntry?] = []
+  let mut i = 0
+  let cache_len = func.code.length()
+  while i < cache_len {
+    prop_cache.push(None)
+    i = i + 1
+  }
   BytecodeExecState::{
     func,
     env,
@@ -2536,6 +2915,7 @@ fn bytecode_exec_state_new(env : Env, func : BytecodeFunction) -> BytecodeExecSt
     finally_stack: [],
     try_stack: [],
     env_stack: [],
+    prop_cache,
     pc: 0,
     resume_pending: false,
     finally_body_depth: 0,
@@ -2640,6 +3020,7 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
   let finally_stack = state.finally_stack
   let try_stack = state.try_stack
   let env_stack = state.env_stack
+  let prop_cache = state.prop_cache
   let mut env = state.env
   let mut gc_tick = 0
   let pop_envs = fn() {
@@ -2752,19 +3133,146 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
               BytecodeOp::GetElem => {
                 let key_value = bytecode_stack_pop(stack)
                 let target = bytecode_stack_pop(stack)
-                let target_obj = to_object(target)
-                let name = property_key_name(key_value)
-                stack.push(property_get_with_receiver(target_obj, name, target))
+                match array_index_from_key_value_raw(key_value) {
+                  Some(index) =>
+                    match target {
+                      Array(arr) => {
+                        let mut name : String? = None
+                        let mut fast_value : Value? = None
+                        match arr.typed_array_data {
+                          Some(_) => ()
+                          None => {
+                            let elements_len = Int64::from_int(arr.elements.length())
+                            if index < elements_len {
+                              let elem_index = Int64::to_int(index)
+                              if props_has_only_length(arr.props) {
+                                match arr.elements[elem_index] {
+                                  Some(value) => fast_value = Some(value)
+                                  None => ()
+                                }
+                              } else {
+                                let name_value = Int64::to_string(index)
+                                name = Some(name_value)
+                                if !props_contains(arr.props, name_value) {
+                                  match arr.elements[elem_index] {
+                                    Some(value) => fast_value = Some(value)
+                                    None => ()
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                        match fast_value {
+                          Some(value) => stack.push(value)
+                          None => {
+                            let name_value = match name {
+                              Some(value) => value
+                              None => Int64::to_string(index)
+                            }
+                            stack.push(
+                              property_get_with_receiver(target, name_value, target),
+                            )
+                          }
+                        }
+                      }
+                      Arguments(_) => {
+                        let name = Int64::to_string(index)
+                        stack.push(
+                          property_get_with_receiver(target, name, target),
+                        )
+                      }
+                      _ => {
+                        let target_obj = to_object(target)
+                        let name = property_key_name(key_value)
+                        stack.push(
+                          property_get_with_receiver(target_obj, name, target),
+                        )
+                      }
+                    }
+                  None => {
+                    let target_obj = to_object(target)
+                    let name = property_key_name(key_value)
+                    stack.push(
+                      property_get_with_receiver(target_obj, name, target),
+                    )
+                  }
+                }
               }
               BytecodeOp::GetElemRef => {
                 let key_value = bytecode_stack_pop(stack)
                 let target = bytecode_stack_pop(stack)
-                let target_obj = to_object(target)
-                let name = property_key_name(key_value)
-                let current = property_get_with_receiver(target_obj, name, target)
-                stack.push(target)
-                stack.push(String(name))
-                stack.push(current)
+                match array_index_from_key_value_raw(key_value) {
+                  Some(index) =>
+                    match target {
+                      Array(arr) => {
+                        let name = Int64::to_string(index)
+                        let mut fast_value : Value? = None
+                        match arr.typed_array_data {
+                          Some(_) => ()
+                          None =>
+                            if props_has_only_length(arr.props) ||
+                              !props_contains(arr.props, name) {
+                              let elements_len = Int64::from_int(arr.elements.length())
+                              if index < elements_len {
+                                let elem_index = Int64::to_int(index)
+                                match arr.elements[elem_index] {
+                                  Some(value) => fast_value = Some(value)
+                                  None => ()
+                                }
+                              }
+                            }
+                        }
+                        let current = match fast_value {
+                          Some(value) => value
+                          None =>
+                            property_get_with_receiver(
+                              target,
+                              name,
+                              target,
+                            )
+                        }
+                        stack.push(target)
+                        stack.push(String(name))
+                        stack.push(current)
+                      }
+                      Arguments(_) => {
+                        let name = Int64::to_string(index)
+                        let current = property_get_with_receiver(
+                          target,
+                          name,
+                          target,
+                        )
+                        stack.push(target)
+                        stack.push(String(name))
+                        stack.push(current)
+                      }
+                      _ => {
+                        let target_obj = to_object(target)
+                        let name = property_key_name(key_value)
+                        let current = property_get_with_receiver(
+                          target_obj,
+                          name,
+                          target,
+                        )
+                        stack.push(target)
+                        stack.push(String(name))
+                        stack.push(current)
+                      }
+                    }
+                  None => {
+                    let target_obj = to_object(target)
+                    let name = property_key_name(key_value)
+                    let current = property_get_with_receiver(
+                      target_obj,
+                      name,
+                      target,
+                    )
+                    stack.push(target)
+                    stack.push(String(name))
+                    stack.push(current)
+                  }
+                }
               }
               BytecodeOp::ToPropertyKey => {
                 let key_value = bytecode_stack_pop(stack)
@@ -2911,11 +3419,48 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
                 let value = bytecode_stack_pop(stack)
                 let key_value = bytecode_stack_pop(stack)
                 let target = bytecode_stack_pop(stack)
-                let _ = to_object(target)
-                let name = property_key_name(key_value)
-                stack.push(
-                  set_property_for_value(target, name, value, env.strict),
-                )
+                match array_index_from_key_value(key_value) {
+                  Some((_, name)) =>
+                    match target {
+                      Array(_) =>
+                        stack.push(
+                          set_property_for_value(
+                            target,
+                            name,
+                            value,
+                            env.strict,
+                          ),
+                        )
+                      Arguments(_) =>
+                        stack.push(
+                          set_property_for_value(
+                            target,
+                            name,
+                            value,
+                            env.strict,
+                          ),
+                        )
+                      _ => {
+                        let _ = to_object(target)
+                        let name = property_key_name(key_value)
+                        stack.push(
+                          set_property_for_value(
+                            target,
+                            name,
+                            value,
+                            env.strict,
+                          ),
+                        )
+                      }
+                    }
+                  None => {
+                    let _ = to_object(target)
+                    let name = property_key_name(key_value)
+                    stack.push(
+                      set_property_for_value(target, name, value, env.strict),
+                    )
+                  }
+                }
               }
               BytecodeOp::CheckSuperThis => {
                 let _ = env_get(env, "this")
@@ -2938,9 +3483,24 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
               BytecodeOp::DeleteElem => {
                 let key_value = bytecode_stack_pop(stack)
                 let target = bytecode_stack_pop(stack)
-                let name = property_key_name(key_value)
-                let result = delete_property(env, target, name)
-                stack.push(result)
+                match array_index_from_key_value(key_value) {
+                  Some((_, name)) =>
+                    match target {
+                      Array(_) => stack.push(delete_property(env, target, name))
+                      Arguments(_) =>
+                        stack.push(delete_property(env, target, name))
+                      _ => {
+                        let name = property_key_name(key_value)
+                        let result = delete_property(env, target, name)
+                        stack.push(result)
+                      }
+                    }
+                  None => {
+                    let name = property_key_name(key_value)
+                    let result = delete_property(env, target, name)
+                    stack.push(result)
+                  }
+                }
               }
               BytecodeOp::NewObject => {
                 stack.push(new_object_value())
@@ -4487,14 +5047,24 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
                       match const_value {
                         String(name) => {
                           let target = bytecode_stack_pop(stack)
+                          let cache_index = pc - 1
                           match bytecode_fast_get_prop(target, name) {
                             Some(value) => stack.push(value)
-                            None => {
-                              let target_obj = to_object(target)
-                              stack.push(
-                                property_get_with_receiver(target_obj, name, target),
-                              )
-                            }
+                            None =>
+                              match bytecode_get_prop_cached(
+                                prop_cache,
+                                cache_index,
+                                target,
+                                name,
+                              ) {
+                                Some(value) => stack.push(value)
+                                None => {
+                                  let target_obj = to_object(target)
+                                  stack.push(
+                                    property_get_with_receiver(target_obj, name, target),
+                                  )
+                                }
+                              }
                           }
                         }
                         _ => {
@@ -4517,14 +5087,25 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
                         String(name) => {
                           let value = bytecode_stack_pop(stack)
                           let target = bytecode_stack_pop(stack)
-                          stack.push(
-                            set_property_for_value(
-                              target,
-                              name,
-                              value,
-                              env.strict,
-                            ),
-                          )
+                          let cache_index = pc - 1
+                          if bytecode_set_prop_cached(
+                            prop_cache,
+                            cache_index,
+                            target,
+                            name,
+                            value,
+                          ) {
+                            stack.push(value)
+                          } else {
+                            stack.push(
+                              set_property_for_value(
+                                target,
+                                name,
+                                value,
+                                env.strict,
+                              ),
+                            )
+                          }
                         }
                         _ => {
                           let _ = throw_type_error("invalid bytecode property name")

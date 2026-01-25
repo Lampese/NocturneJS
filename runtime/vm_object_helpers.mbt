@@ -29,6 +29,28 @@ fn object_get_own_property_names(target : Value) -> Value raise {
 }
 
 ///|
+fn own_enumerable_property_names(target : Value) -> Array[String] {
+  match target {
+    Object(obj) =>
+      match obj.string_data {
+        Some(_) => string_own_keys(obj, false)
+        None =>
+          if obj.is_module_namespace {
+            module_namespace_prop_keys(obj.props, false)
+          } else {
+            ordered_prop_keys(obj.props, false)
+          }
+      }
+    Function(func) => ordered_prop_keys(func.props, false)
+    BoundFunction(bound) => ordered_prop_keys(bound.props, false)
+    Builtin(builtin) => ordered_prop_keys(builtin.props, false)
+    Array(arr) => array_own_keys(arr, false)
+    Arguments(args) => arguments_own_keys(args, false)
+    _ => []
+  }
+}
+
+///|
 fn object_keys(target : Value) -> Value raise {
   match target {
     Object(obj) =>
@@ -57,63 +79,11 @@ fn object_keys(target : Value) -> Value raise {
           names_to_array_value(names)
         }
         None => {
-          let names_value = object_get_own_property_names(target)
-          match names_value {
-            Array(arr) => {
-              let names : Array[String] = []
-              for entry in arr.elements {
-                match entry {
-                  Some(String(name)) => {
-                    let desc = get_own_property_descriptor(target, name)
-                    match desc {
-                      Undefined => ()
-                      _ =>
-                        if !is_object_like(desc) {
-                          let _ = throw_type_error(
-                            "invalid property descriptor",
-                          )
-
-                        } else if is_truthy(property_get(desc, "enumerable")) {
-                          names.push(name)
-                        }
-                    }
-                  }
-                  _ => ()
-                }
-              }
-              names_to_array_value(names)
-            }
-            _ => new_array_value([])
-          }
+          names_to_array_value(own_enumerable_property_names(target))
         }
       }
     _ => {
-      let names_value = object_get_own_property_names(target)
-      match names_value {
-        Array(arr) => {
-          let names : Array[String] = []
-          for entry in arr.elements {
-            match entry {
-              Some(String(name)) => {
-                let desc = get_own_property_descriptor(target, name)
-                match desc {
-                  Undefined => ()
-                  _ =>
-                    if !is_object_like(desc) {
-                      let _ = throw_type_error("invalid property descriptor")
-
-                    } else if is_truthy(property_get(desc, "enumerable")) {
-                      names.push(name)
-                    }
-                }
-              }
-              _ => ()
-            }
-          }
-          names_to_array_value(names)
-        }
-        _ => new_array_value([])
-      }
+      names_to_array_value(own_enumerable_property_names(target))
     }
   }
 }
@@ -176,66 +146,26 @@ fn object_key_values(target : Value, kind : Int) -> Value raise {
           }
         }
         None => {
-          let names_value = object_get_own_property_names(target)
-          match names_value {
-            Array(arr) =>
-              for entry in arr.elements {
-                match entry {
-                  Some(String(name)) => {
-                    let desc = get_own_property_descriptor(target, name)
-                    match desc {
-                      Undefined => ()
-                      _ =>
-                        if !is_object_like(desc) {
-                          let _ = throw_type_error(
-                            "invalid property descriptor",
-                          )
-
-                        } else if is_truthy(property_get(desc, "enumerable")) {
-                          if kind == OBJECT_KEYS_KIND_KEYS {
-                            entries.push(Some(String(name)))
-                          } else {
-                            let value = property_get(target, name)
-                            push_entry(entries, name, value, kind)
-                          }
-                        }
-                    }
-                  }
-                  _ => ()
-                }
-              }
-            _ => ()
+          let names = own_enumerable_property_names(target)
+          for name in names {
+            if kind == OBJECT_KEYS_KIND_KEYS {
+              entries.push(Some(String(name)))
+            } else {
+              let value = property_get(target, name)
+              push_entry(entries, name, value, kind)
+            }
           }
         }
       }
     _ => {
-      let names_value = object_get_own_property_names(target)
-      match names_value {
-        Array(arr) =>
-          for entry in arr.elements {
-            match entry {
-              Some(String(name)) => {
-                let desc = get_own_property_descriptor(target, name)
-                match desc {
-                  Undefined => ()
-                  _ =>
-                    if !is_object_like(desc) {
-                      let _ = throw_type_error("invalid property descriptor")
-
-                    } else if is_truthy(property_get(desc, "enumerable")) {
-                      if kind == OBJECT_KEYS_KIND_KEYS {
-                        entries.push(Some(String(name)))
-                      } else {
-                        let value = property_get(target, name)
-                        push_entry(entries, name, value, kind)
-                      }
-                    }
-                }
-              }
-              _ => ()
-            }
-          }
-        _ => ()
+      let names = own_enumerable_property_names(target)
+      for name in names {
+        if kind == OBJECT_KEYS_KIND_KEYS {
+          entries.push(Some(String(name)))
+        } else {
+          let value = property_get(target, name)
+          push_entry(entries, name, value, kind)
+        }
       }
     }
   }

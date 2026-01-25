@@ -449,16 +449,7 @@ fn call_builtin_object(
       let key = if args.is_empty() { Undefined } else { args[0] }
       let name = property_key_name(key)
       let obj = to_object(target)
-      let desc = get_own_property_descriptor(obj, name)
-      match desc {
-        Undefined => Bool(false)
-        _ =>
-          if !is_object_like(desc) {
-            throw_type_error("invalid property descriptor")
-          } else {
-            Bool(is_truthy(property_get(desc, "enumerable")))
-          }
-      }
+      Bool(own_property_is_enumerable(obj, name))
     }
     BuiltinFunction::ObjectIsPrototypeOf => {
       let target = match builtin.this_value {

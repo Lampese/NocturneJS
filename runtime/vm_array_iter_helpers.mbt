@@ -16,10 +16,48 @@ fn array_iterate(
   }
   let mut out_index = 0L
   let mut k = 0L
+  let mut fast_array : ArrayValue? = None
+  match obj {
+    Array(arr) =>
+      if arr.typed_array_data is None {
+        fast_array = Some(arr)
+      }
+    _ => ()
+  }
   while k < len {
     let key = Int64::to_string(k)
-    if has_property_value(obj, key) {
-      let value = property_get(obj, key)
+    let mut present = false
+    let mut value = Undefined
+    match fast_array {
+      Some(arr) => {
+        if props_contains(arr.props, key) {
+          present = true
+          value = property_get(obj, key)
+        } else {
+          let elements_len = Int64::from_int(arr.elements.length())
+          if k < elements_len {
+            let index = Int64::to_int(k)
+            match arr.elements[index] {
+              Some(found) => {
+                present = true
+                value = found
+              }
+              None => ()
+            }
+          }
+          if !present && has_property_value(obj, key) {
+            present = true
+            value = property_get(obj, key)
+          }
+        }
+      }
+      None =>
+        if has_property_value(obj, key) {
+          present = true
+          value = property_get(obj, key)
+        }
+    }
+    if present {
       let res = call_value_with_this(
         callback,
         [value, Number(Int64::to_double(k)), obj],

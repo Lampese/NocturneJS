@@ -128,6 +128,7 @@ pub fn reset_runtime_state() -> Unit {
   run_gc_without_weak()
   gc_release_all()
   bytecode_cache_clear()
+  props_shape_cache_clear()
   gc_alloc_count_ref().update(fn(_) { 0 })
   gc_threshold_ref().update(fn(_) { gc_default_threshold })
   gc_value_root_ref().update(fn(_) { [] })

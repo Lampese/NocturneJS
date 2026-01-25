@@ -28,9 +28,11 @@ fn build_arg_list(value : Value) -> Array[Value] raise {
   if !(Double::is_nan(len_num) || len_num < 0.0) {
     len = Int::max(0, Int64::to_int(Double::to_int64(Double::trunc(len_num))))
   }
-  let args : Array[Value] = []
-  for i = 0; i < len; i = i + 1 {
-    args.push(property_get(target, Int::to_string(i)))
+  let args : Array[Value] = Array::make(len, Undefined)
+  let mut i = 0
+  while i < len {
+    args[i] = property_get(target, Int::to_string(i))
+    i = i + 1
   }
   args
 }

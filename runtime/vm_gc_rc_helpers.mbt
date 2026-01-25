@@ -169,39 +169,124 @@ fn props_set(
   name : String,
   prop : Property,
 ) -> Unit {
-  let map = props_ensure_map(props)
-  match map.get(name) {
-    Some(existing) => rc_decref_property(name, existing)
-    None => ()
+  props.version = props.version + 1
+  match props.repr {
+    PropsRepr::Shape(shape, slots) => {
+      if !shape.entry_map.contains(name) &&
+        shape.entries.length() >= PROPS_DICT_THRESHOLD {
+        props_convert_to_dict(props)
+        props_set(props, name, prop)
+        return ()
+      }
+      let new_slot = slot_from_property(prop)
+      match shape.entry_map.get(name) {
+        Some(index) =>
+          if index >= 0 && index < slots.length() {
+            let entry = shape.entries[index]
+            let mut next_shape = shape
+            if entry.writable != prop.writable ||
+              entry.enumerable != prop.enumerable ||
+              entry.configurable != prop.configurable {
+              next_shape =
+                shape_transition_update(
+                  shape,
+                  name,
+                  prop.writable,
+                  prop.enumerable,
+                  prop.configurable,
+                )
+            }
+            let old_prop = property_from_entry_slot(entry, slots[index])
+            rc_decref_property(name, old_prop)
+            rc_incref_property(name, prop)
+            slots[index] = new_slot
+            props.repr = PropsRepr::Shape(next_shape, slots)
+          } else {
+            rc_incref_property(name, prop)
+            while slots.length() < index {
+              slots.push(PropSlot::Data(Undefined))
+            }
+            slots.push(new_slot)
+            props.repr = PropsRepr::Shape(shape, slots)
+          }
+        None => {
+          let next_shape =
+            shape_transition_add(
+              shape,
+              name,
+              prop.writable,
+              prop.enumerable,
+              prop.configurable,
+            )
+          rc_incref_property(name, prop)
+          slots.push(new_slot)
+          props.repr = PropsRepr::Shape(next_shape, slots)
+        }
+      }
+    }
+    PropsRepr::Dict(dict) => {
+      match dict.map.get(name) {
+        Some(existing) => rc_decref_property(name, existing)
+        None => dict.order.push(name)
+      }
+      rc_incref_property(name, prop)
+      dict.map.set(name, prop)
+      props.repr = PropsRepr::Dict(dict)
+    }
   }
-  rc_incref_property(name, prop)
-  map.set(name, prop)
 }
 
 ///|
 fn props_remove(props : Props, name : String) -> Unit {
-  if props.shared_empty {
-    return ()
-  }
-  match props.map.get(name) {
-    Some(existing) => rc_decref_property(name, existing)
-    None => ()
-  }
-  let _ = props.map.remove(name)
-  if props.map.is_empty() {
-    props_reset_empty(props)
+  props.version = props.version + 1
+  match props.repr {
+    PropsRepr::Shape(shape, slots) =>
+      match shape.entry_map.get(name) {
+        Some(index) =>
+          if index >= 0 && index < slots.length() {
+            let entry = shape.entries[index]
+            let old_prop = property_from_entry_slot(entry, slots[index])
+            rc_decref_property(name, old_prop)
+            let _ = slots.remove(index)
+            let next_shape = shape_transition_remove(shape, name)
+            props.repr = PropsRepr::Shape(next_shape, slots)
+          } else {
+            let next_shape = shape_transition_remove(shape, name)
+            props.repr = PropsRepr::Shape(next_shape, slots)
+          }
+        None => ()
+      }
+    PropsRepr::Dict(dict) => {
+      match dict.map.get(name) {
+        Some(existing) => rc_decref_property(name, existing)
+        None => ()
+      }
+      let _ = dict.map.remove(name)
+      let mut i = 0
+      while i < dict.order.length() {
+        if dict.order[i] == name {
+          let _ = dict.order.remove(i)
+          break
+        }
+        i = i + 1
+      }
+      if dict.map.is_empty() {
+        props_reset_empty(props)
+      } else {
+        props.repr = PropsRepr::Dict(dict)
+      }
+    }
   }
 }
 
 ///|
 fn props_clear(props : Props) -> Unit {
-  if props.shared_empty {
+  if props_is_empty(props) {
     return ()
   }
-  for name, prop in props.map {
+  props_iter(props, fn(name, prop) {
     rc_decref_property(name, prop)
-  }
-  props.map.clear()
+  })
   props_reset_empty(props)
 }
 

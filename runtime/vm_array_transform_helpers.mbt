@@ -154,6 +154,20 @@ fn array_to_sorted_value(
 }
 
 ///|
+fn props_has_array_index(props : Props) -> Bool {
+  let mut found = false
+  props_iter(props, fn(key, _) {
+    if !found && key != "length" {
+      match array_index_from_name(key) {
+        Some(_) => found = true
+        None => ()
+      }
+    }
+  })
+  found
+}
+
+///|
 fn array_to_spliced_value(
   this_value : Value,
   args : Array[Value],
@@ -184,10 +198,12 @@ fn array_to_spliced_value(
     return throw_range_error("invalid array length")
   }
   let max_int = 2147483647
-  if new_len64 > Int64::from_int(max_int) {
+  let max_int64 = Int64::from_int(max_int)
+  if new_len64 > max_int64 {
     return throw_range_error("invalid array length")
   }
   let new_len = Int64::to_int(new_len64)
+  let len_int = if len64 <= max_int64 { Int64::to_int(len64) } else { -1 }
   let array_proto_value = match current_env() {
     Some(env) =>
       match value_from_object(array_proto_for_env(env)) {
@@ -200,40 +216,102 @@ fn array_to_spliced_value(
     Array::make(new_len, None),
     proto=array_proto_value,
   )
-  let mut write_index = 0L
-  let mut i = 0L
-  while i < start {
-    let key = Int64::to_string(i)
-    let value = if has_property_value(obj, key) {
-      property_get(obj, key)
-    } else {
-      Undefined
+  let obj_is_proxy = match obj {
+    Object(inner) => inner.proxy_data is Some(_)
+    _ => false
+  }
+  let mut fast_elements : Array[Value?]? = None
+  match obj {
+    Array(arr) =>
+      if arr.typed_array_data is None &&
+        len_int >= 0 &&
+        arr.elements.length() == len_int &&
+        !props_has_array_index(arr.props) {
+        fast_elements = Some(arr.elements)
+      }
+    _ => ()
+  }
+  let get_value = fn(index : Int64) -> Value raise {
+    match fast_elements {
+      Some(elements) => {
+        let idx = Int64::to_int(index)
+        if idx >= 0 && idx < elements.length() {
+          match elements[idx] {
+            Some(value) => return value
+            None => ()
+          }
+        }
+      }
+      None => ()
     }
-    create_data_property_or_throw(result, Int64::to_string(write_index), value)
-    write_index = write_index + 1L
-    i = i + 1L
-  }
-  let mut j = 0
-  while j < Int64::to_int(add) {
-    create_data_property_or_throw(
-      result,
-      Int64::to_string(write_index),
-      args[2 + j],
-    )
-    write_index = write_index + 1L
-    j = j + 1
-  }
-  i = start + del
-  while i < len64 {
-    let key = Int64::to_string(i)
-    let value = if has_property_value(obj, key) {
-      property_get(obj, key)
+    let key = Int64::to_string(index)
+    if obj_is_proxy {
+      if has_property_value(obj, key) {
+        property_get(obj, key)
+      } else {
+        Undefined
+      }
     } else {
-      Undefined
+      property_get(obj, key)
     }
-    create_data_property_or_throw(result, Int64::to_string(write_index), value)
-    write_index = write_index + 1L
-    i = i + 1L
   }
-  result
+  match result {
+    Array(arr) => {
+      let mut write_index = 0
+      let mut i = 0L
+      while i < start {
+        let value = get_value(i)
+        rc_replace_optional_value(arr.elements[write_index], Some(value))
+        arr.elements[write_index] = Some(value)
+        write_index = write_index + 1
+        i = i + 1L
+      }
+      let mut j = 0
+      let add_count = if args.length() > 2 { args.length() - 2 } else { 0 }
+      while j < add_count {
+        let value = args[2 + j]
+        rc_replace_optional_value(arr.elements[write_index], Some(value))
+        arr.elements[write_index] = Some(value)
+        write_index = write_index + 1
+        j = j + 1
+      }
+      i = start + del
+      while i < len64 {
+        let value = get_value(i)
+        rc_replace_optional_value(arr.elements[write_index], Some(value))
+        arr.elements[write_index] = Some(value)
+        write_index = write_index + 1
+        i = i + 1L
+      }
+      result
+    }
+    _ => {
+      let mut write_index = 0L
+      let mut i = 0L
+      while i < start {
+        let value = get_value(i)
+        create_data_property_or_throw(result, Int64::to_string(write_index), value)
+        write_index = write_index + 1L
+        i = i + 1L
+      }
+      let mut j = 0
+      while j < Int64::to_int(add) {
+        create_data_property_or_throw(
+          result,
+          Int64::to_string(write_index),
+          args[2 + j],
+        )
+        write_index = write_index + 1L
+        j = j + 1
+      }
+      i = start + del
+      while i < len64 {
+        let value = get_value(i)
+        create_data_property_or_throw(result, Int64::to_string(write_index), value)
+        write_index = write_index + 1L
+        i = i + 1L
+      }
+      result
+    }
+  }
 }

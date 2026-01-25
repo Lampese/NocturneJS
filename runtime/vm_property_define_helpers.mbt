@@ -625,13 +625,49 @@ fn define_array_property(
         }
         set_length_prop(arr.props, Number(Int64::to_double(new_len)))
       }
+      let is_plain_data = !desc_info.has_get &&
+        !desc_info.has_set &&
+        desc_info.has_value &&
+        desc_info.has_writable &&
+        desc_info.writable &&
+        desc_info.has_enumerable &&
+        desc_info.enumerable &&
+        desc_info.has_configurable &&
+        desc_info.configurable
+      let max_dense_index = 2147483646
+      let elements_len = arr.elements.length()
+      if is_plain_data &&
+        arr.typed_array_data is None &&
+        index64 >= 0L &&
+        index64 <= Int64::from_int(max_dense_index) &&
+        index64 <= Int64::from_int(elements_len) {
+        if props_contains(arr.props, name) {
+          props_remove(arr.props, name)
+        }
+        let index = Int64::to_int(index64)
+        if index >= arr.elements.length() {
+          while arr.elements.length() < index {
+            arr.elements.push(None)
+          }
+          rc_incref_value(desc_info.value)
+          arr.elements.push(Some(desc_info.value))
+        } else {
+          rc_replace_optional_value(arr.elements[index], Some(desc_info.value))
+          arr.elements[index] = Some(desc_info.value)
+        }
+        return ()
+      }
       if arr.typed_array_data is None &&
         !props_contains(arr.props, name) &&
         index64 >= 0L &&
         index64 < Int64::from_int(arr.elements.length()) {
         let index = Int64::to_int(index64)
         match arr.elements[index] {
-          Some(value) => props_set(arr.props, name, property_data(value))
+          Some(value) => {
+            props_set(arr.props, name, property_data(value))
+            rc_replace_optional_value(arr.elements[index], None)
+            arr.elements[index] = None
+          }
           None => ()
         }
       }
