@@ -283,7 +283,7 @@ fn env_declare(env : Env, name : String, value : Value) -> Unit {
         None =>
           match global_object(env) {
             Some(obj) =>
-              if !obj.props.contains(name) {
+              if !props_contains(obj.props, name) {
                 props_set(obj.props, name, property_data_non_enum(value))
               }
             None => env_bindings_set(env, name, value)
@@ -321,7 +321,7 @@ fn global_has_lexical_declaration(env : Env, name : String) -> Bool {
 fn global_can_declare_var(env : Env, name : String) -> Bool {
   match global_object(env) {
     Some(obj) =>
-      match obj.props.get(name) {
+      match props_get(obj.props, name) {
         Some(_) => true
         None => obj.extensible
       }
@@ -336,7 +336,7 @@ fn global_can_declare_function(env : Env, name : String) -> Bool {
   }
   match global_object(env) {
     Some(obj) =>
-      match obj.props.get(name) {
+      match props_get(obj.props, name) {
         Some(prop) =>
           if prop.configurable {
             true
@@ -353,7 +353,7 @@ fn global_can_declare_function(env : Env, name : String) -> Bool {
 fn global_has_restricted_property(env : Env, name : String) -> Bool {
   match global_object(env) {
     Some(obj) =>
-      match obj.props.get(name) {
+      match props_get(obj.props, name) {
         Some(prop) => !prop.configurable
         None => false
       }
@@ -369,7 +369,7 @@ fn global_create_var_binding(
 ) -> Unit raise {
   match global_object(env) {
     Some(obj) =>
-      match obj.props.get(name) {
+      match props_get(obj.props, name) {
         Some(_) => ()
         None =>
           if !obj.extensible {
@@ -392,7 +392,7 @@ fn global_create_function_binding(
 ) -> Unit raise {
   match global_object(env) {
     Some(obj) =>
-      match obj.props.get(name) {
+      match props_get(obj.props, name) {
         Some(prop) =>
           if prop.configurable {
             props_set(obj.props, name, property_data_global(value, configurable))
@@ -425,7 +425,7 @@ fn global_create_function_binding(
 fn env_declare_var(env : Env, name : String, configurable : Bool) -> Unit raise {
   match env.var_object {
     Some(Object(obj)) => {
-      match obj.props.get(name) {
+      match props_get(obj.props, name) {
         Some(_) => ()
         None =>
           if !obj.extensible {
@@ -478,7 +478,7 @@ fn env_set_local_or_var_object(
 ) -> Unit raise {
   match env.var_object {
     Some(Object(obj)) =>
-      match obj.props.get(name) {
+      match props_get(obj.props, name) {
         Some(_) => {
           let _ = property_set(Value::Object(obj), name, value, env.strict)
 

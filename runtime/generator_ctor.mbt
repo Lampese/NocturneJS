@@ -133,7 +133,7 @@ fn generator_function_ctor_for_env(env : Env) -> BuiltinValue? {
       None =>
         match generator_function_proto() {
           Some(proto_obj) =>
-            match proto_obj.props.get("constructor") {
+            match props_get(proto_obj.props, "constructor") {
                 Some(prop) =>
                   match prop.value {
                     Builtin(builtin) => {
@@ -158,7 +158,7 @@ fn generator_function_ctor_for_env(env : Env) -> BuiltinValue? {
 fn generator_function_proto_for_env(env : Env) -> ObjectValue? {
   match generator_function_ctor_for_env(env) {
     Some(ctor) =>
-      match ctor.props.get("prototype") {
+      match props_get(ctor.props, "prototype") {
         Some(proto_prop) =>
           match proto_prop.value {
             Object(proto_obj) => {
@@ -189,7 +189,7 @@ fn async_function_ctor_for_env(env : Env) -> BuiltinValue? {
       None =>
         match async_function_proto() {
           Some(proto_obj) =>
-            match proto_obj.props.get("constructor") {
+            match props_get(proto_obj.props, "constructor") {
               Some(prop) =>
                   match prop.value {
                     Builtin(builtin) => {
@@ -214,7 +214,7 @@ fn async_function_ctor_for_env(env : Env) -> BuiltinValue? {
 fn async_function_proto_for_env(env : Env) -> ObjectValue? {
   match async_function_ctor_for_env(env) {
     Some(ctor) =>
-      match ctor.props.get("prototype") {
+      match props_get(ctor.props, "prototype") {
         Some(proto_prop) =>
           match proto_prop.value {
             Object(proto_obj) => Some(proto_obj)
@@ -242,7 +242,7 @@ fn async_generator_function_ctor_for_env(env : Env) -> BuiltinValue? {
       None =>
         match async_generator_function_proto() {
           Some(proto_obj) =>
-            match proto_obj.props.get("constructor") {
+            match props_get(proto_obj.props, "constructor") {
               Some(prop) =>
                   match prop.value {
                     Builtin(builtin) => {
@@ -267,7 +267,7 @@ fn async_generator_function_ctor_for_env(env : Env) -> BuiltinValue? {
 fn async_generator_function_proto_for_env(env : Env) -> ObjectValue? {
   match async_generator_function_ctor_for_env(env) {
     Some(ctor) =>
-      match ctor.props.get("prototype") {
+      match props_get(ctor.props, "prototype") {
         Some(proto_prop) =>
           match proto_prop.value {
             Object(proto_obj) => {
@@ -325,7 +325,7 @@ fn set_function_proto_prototype(
   func_proto : ObjectValue,
   proto_obj : ObjectValue,
 ) -> Unit {
-  let proto_prop = match func_proto.props.get("prototype") {
+  let proto_prop = match props_get(func_proto.props, "prototype") {
     Some(prop) =>
       Property::{
         value: Object(proto_obj),

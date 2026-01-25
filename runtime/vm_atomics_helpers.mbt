@@ -75,7 +75,7 @@ fn atomics_require_typed_array(
             id: alloc_id(),
             elements: [],
             proto: value_from_object(array_proto()),
-            props: Map::new(),
+            props: props_new(),
             typed_array_data: None,
             extensible: true,
           })
@@ -99,7 +99,7 @@ fn atomics_require_typed_array(
         id: alloc_id(),
         elements: [],
         proto: value_from_object(array_proto()),
-        props: Map::new(),
+        props: props_new(),
         typed_array_data: None,
         extensible: true,
       })

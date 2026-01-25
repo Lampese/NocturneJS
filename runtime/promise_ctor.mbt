@@ -13,11 +13,11 @@ fn promise_proto() -> ObjectValue? {
 fn promise_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("Promise") {
+      match props_get(global_obj.props, "Promise") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -26,7 +26,7 @@ fn promise_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -97,7 +97,7 @@ fn promise_ctor_for_env(env : Env) -> Value? {
 fn promise_ctor_from_global_env(env : Env) -> Value? {
   match global_object(env) {
     Some(obj) =>
-      match obj.props.get("Promise") {
+      match props_get(obj.props, "Promise") {
         Some(prop) => Some(prop.value)
         None => None
       }

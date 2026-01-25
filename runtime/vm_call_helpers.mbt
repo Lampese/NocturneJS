@@ -679,7 +679,7 @@ fn new_generator_value(
       None => value_from_object(generator_proto())
     }
   }
-  let proto_value = match func.props.get("prototype") {
+  let proto_value = match props_get(func.props, "prototype") {
     Some(prop) =>
       if is_object_like(prop.value) {
         Some(prop.value)
@@ -690,7 +690,7 @@ fn new_generator_value(
   }
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto: proto_value,
     string_data: None,
     number_data: None,

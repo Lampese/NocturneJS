@@ -320,7 +320,7 @@ fn module_namespace_add_export(
     Some(record) =>
       match record.module_ns {
         Some(namespace_obj) =>
-          if !namespace_obj.props.contains(name) {
+          if !props_contains(namespace_obj.props, name) {
             let prop_value = new_module_binding_value(Object(exports), name)
             props_set(namespace_obj.props, name, Property::{
               value: prop_value,
@@ -343,7 +343,7 @@ fn module_namespace_remove_export(path : String, name : String) -> Unit {
     Some(record) =>
       match record.module_ns {
         Some(namespace_obj) =>
-          if namespace_obj.props.contains(name) {
+          if props_contains(namespace_obj.props, name) {
             props_remove(namespace_obj.props, name)
           }
         None => ()

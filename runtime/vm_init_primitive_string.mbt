@@ -3,7 +3,7 @@ fn init_string_proto(object_proto_obj : ObjectValue) -> (ObjectValue, Value) {
   let string_proto_value = {
     let obj = register_object_value(ObjectValue::{
       id: alloc_id(),
-      props: Map::new(),
+      props: props_new(),
       proto: Some(Object(object_proto_obj)),
       string_data: Some(""),
       number_data: None,

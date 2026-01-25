@@ -22,7 +22,7 @@ fn define_class_accessor(
   let mut final_setter = setter
   match props_map_for_value(target) {
     Some(props) =>
-      match props.get(name) {
+      match props_get(props, name) {
         Some(prop) =>
           if prop.getter is Some(_) || prop.setter is Some(_) {
             if final_getter is None {

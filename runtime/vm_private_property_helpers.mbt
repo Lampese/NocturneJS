@@ -6,7 +6,7 @@ fn define_private_property(
 ) -> Unit raise {
   match props_map_for_value(target) {
     Some(props) =>
-      if props.contains(key) {
+      if props_contains(props, key) {
         let _ = throw_type_error("private class field already exists")
 
       } else {
@@ -27,7 +27,7 @@ fn private_property_get(
 ) -> Value raise {
   match props_map_for_value(target) {
     Some(props) =>
-      match props.get(key) {
+      match props_get(props, key) {
         Some(prop) =>
           if prop.getter is Some(_) || prop.setter is Some(_) {
             match prop.getter {
@@ -66,7 +66,7 @@ fn private_property_set(
 ) -> Unit raise {
   match props_map_for_value(target) {
     Some(props) =>
-      match props.get(key) {
+      match props_get(props, key) {
         Some(prop) =>
           if prop.getter is Some(_) || prop.setter is Some(_) {
             match prop.setter {

@@ -24,8 +24,8 @@ fn module_binding_info(value : Value) -> (Value, String, Int)? {
     Object(obj) =>
       match
         (
-          obj.props.get(module_binding_target_key),
-          obj.props.get(module_binding_name_key),
+          props_get(obj.props, module_binding_target_key),
+          props_get(obj.props, module_binding_name_key),
         ) {
         (Some(target_prop), Some(name_prop)) =>
           match name_prop.value {

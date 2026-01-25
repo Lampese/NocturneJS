@@ -228,16 +228,16 @@ fn bjson_encode_object(
                             }
                             _ => {
                               let entries : Array[Json] = []
-                              for key, prop in obj.props {
+                              props_iter_raise(obj.props, fn(key, prop) raise {
                                 if is_symbol_prop_key(key) || !prop.enumerable {
-                                  continue
+                                  return ()
                                 }
                                 let pair : Array[Json] = [
                                   Json::string(key),
                                   bjson_encode_node(prop.value, state),
                                 ]
                                 entries.push(Json::array(pair))
-                              }
+                              })
                               bjson_tag("obj", [Json::array(entries)])
                             }
                           }
@@ -256,7 +256,7 @@ fn bjson_encode_array_buffer(obj : ObjectValue, data : ArrayBufferData) -> Json 
     bytes.push(Json::number(Double::from_int(Byte::to_int(b))))
   }
   let mut max_len = data.bytes.length()
-  match obj.props.get("maxByteLength") {
+  match props_get(obj.props, "maxByteLength") {
     Some(prop) =>
       match prop.value {
         Number(value) => max_len = to_int32(Double::trunc(value))
@@ -265,7 +265,7 @@ fn bjson_encode_array_buffer(obj : ObjectValue, data : ArrayBufferData) -> Json 
     None => ()
   }
   let mut resizable = false
-  match obj.props.get("resizable") {
+  match props_get(obj.props, "resizable") {
     Some(prop) =>
       match prop.value {
         Bool(value) => resizable = value

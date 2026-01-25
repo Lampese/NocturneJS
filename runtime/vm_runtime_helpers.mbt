@@ -48,7 +48,7 @@ fn realm_env_from_env(env : Env) -> Env {
 
 ///|
 fn new_throw_type_error_value_for_env(env : Env) -> Value {
-  let props = Map::new()
+  let props = props_new()
   props_set(props, "length", property_data_const(Number(Double::from_int(0))))
   props_set(props, "name", property_data_const(String("")))
   let proto = match function_proto_for_env(env) {

@@ -42,11 +42,11 @@ fn symbol_proto() -> ObjectValue? {
 fn string_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("String") {
+      match props_get(global_obj.props, "String") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -55,7 +55,7 @@ fn string_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -75,11 +75,11 @@ fn string_proto_for_env(env : Env) -> ObjectValue? {
 fn number_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("Number") {
+      match props_get(global_obj.props, "Number") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -88,7 +88,7 @@ fn number_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -108,11 +108,11 @@ fn number_proto_for_env(env : Env) -> ObjectValue? {
 fn bool_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("Boolean") {
+      match props_get(global_obj.props, "Boolean") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -121,7 +121,7 @@ fn bool_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -141,11 +141,11 @@ fn bool_proto_for_env(env : Env) -> ObjectValue? {
 fn bigint_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("BigInt") {
+      match props_get(global_obj.props, "BigInt") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -154,7 +154,7 @@ fn bigint_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -174,11 +174,11 @@ fn bigint_proto_for_env(env : Env) -> ObjectValue? {
 fn symbol_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("Symbol") {
+      match props_get(global_obj.props, "Symbol") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -187,7 +187,7 @@ fn symbol_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)

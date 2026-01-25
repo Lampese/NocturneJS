@@ -1,7 +1,7 @@
 ///|
 fn clone_global_object(obj : ObjectValue, env : Env) -> ObjectValue {
-  let props : Map[String, Property] = Map::new()
-  for name, prop in obj.props {
+  let props = props_new()
+  props_iter(obj.props, fn(name, prop) {
     let value = clone_realm_value(prop.value, env)
     let getter = match prop.getter {
       Some(getter_value) => Some(clone_realm_value(getter_value, env))
@@ -19,7 +19,7 @@ fn clone_global_object(obj : ObjectValue, env : Env) -> ObjectValue {
       getter,
       setter,
     })
-  }
+  })
   let clone = register_object_value(ObjectValue::{
     id: alloc_id(),
     props,
@@ -65,8 +65,8 @@ fn clone_object_value_for_env(
   env : Env,
   constructor_override : Value?,
 ) -> ObjectValue {
-  let props : Map[String, Property] = Map::new()
-  for name, prop in obj.props {
+  let props = props_new()
+  props_iter(obj.props, fn(name, prop) {
     let value = if name == "constructor" {
       match constructor_override {
         Some(ctor_value) => ctor_value
@@ -91,7 +91,7 @@ fn clone_object_value_for_env(
       getter,
       setter,
     })
-  }
+  })
   let clone = register_object_value(ObjectValue::{
     id: alloc_id(),
     props,
@@ -234,8 +234,8 @@ fn clone_function_value_for_env(
   constructor_override : Value?,
   proto_override : Value?,
 ) -> FunctionValue {
-  let props : Map[String, Property] = Map::new()
-  for name, prop in func.props {
+  let props = props_new()
+  props_iter(func.props, fn(name, prop) {
     let value = if name == "constructor" {
       match constructor_override {
         Some(ctor_value) => ctor_value
@@ -260,7 +260,7 @@ fn clone_function_value_for_env(
       getter,
       setter,
     })
-  }
+  })
   let proto = match proto_override {
     Some(value) => Some(value)
     None => func.proto
@@ -315,7 +315,7 @@ fn clone_builtin_value_for_env(
   builtin : BuiltinValue,
   env : Env,
 ) -> BuiltinValue {
-  let props : Map[String, Property] = Map::new()
+  let props = props_new()
   let proto = match builtin.kind {
     BuiltinFunction::GeneratorFunctionConstructor
     | BuiltinFunction::AsyncGeneratorFunctionConstructor
@@ -364,7 +364,7 @@ fn clone_builtin_value_for_env(
   rc_incref_optional_value(clone.proto)
   rc_incref_optional_env(clone.realm_env)
   let clone_value = Builtin(clone)
-  for name, prop in builtin.props {
+  props_iter(builtin.props, fn(name, prop) {
     if name == "prototype" {
       match prop.value {
         Object(obj) => {
@@ -388,7 +388,7 @@ fn clone_builtin_value_for_env(
               None => None
             },
           })
-          continue
+          return ()
         }
         Function(func) => {
           let proto_override = match object_proto_for_env(env) {
@@ -416,7 +416,7 @@ fn clone_builtin_value_for_env(
               None => None
             },
           })
-          continue
+          return ()
         }
         _ => ()
       }
@@ -435,7 +435,7 @@ fn clone_builtin_value_for_env(
         None => None
       },
     })
-  }
+  })
   clone
 }
 
@@ -506,7 +506,7 @@ fn fixup_realm_value(
           fixup_realm_value(inner, env, seen_objects, seen_builtins)
         None => ()
       }
-      for _, prop in builtin.props {
+      props_iter(builtin.props, fn(_, prop) {
         fixup_realm_value(prop.value, env, seen_objects, seen_builtins)
         match prop.getter {
           Some(getter_value) =>
@@ -518,7 +518,7 @@ fn fixup_realm_value(
             fixup_realm_value(setter_value, env, seen_objects, seen_builtins)
           None => ()
         }
-      }
+      })
     }
     Function(func) => {
       if seen_objects.contains(func.id) {
@@ -530,7 +530,7 @@ fn fixup_realm_value(
           fixup_realm_value(proto_value, env, seen_objects, seen_builtins)
         None => ()
       }
-      for _, prop in func.props {
+      props_iter(func.props, fn(_, prop) {
         fixup_realm_value(prop.value, env, seen_objects, seen_builtins)
         match prop.getter {
           Some(getter_value) =>
@@ -542,7 +542,7 @@ fn fixup_realm_value(
             fixup_realm_value(setter_value, env, seen_objects, seen_builtins)
           None => ()
         }
-      }
+      })
     }
     BoundFunction(bound) => {
       if seen_objects.contains(bound.id) {
@@ -558,7 +558,7 @@ fn fixup_realm_value(
       for value in bound.bound_args {
         fixup_realm_value(value, env, seen_objects, seen_builtins)
       }
-      for _, prop in bound.props {
+      props_iter(bound.props, fn(_, prop) {
         fixup_realm_value(prop.value, env, seen_objects, seen_builtins)
         match prop.getter {
           Some(getter_value) =>
@@ -570,7 +570,7 @@ fn fixup_realm_value(
             fixup_realm_value(setter_value, env, seen_objects, seen_builtins)
           None => ()
         }
-      }
+      })
     }
     Object(obj) => {
       if seen_objects.contains(obj.id) {
@@ -582,7 +582,7 @@ fn fixup_realm_value(
           fixup_realm_value(proto_value, env, seen_objects, seen_builtins)
         None => ()
       }
-      for _, prop in obj.props {
+      props_iter(obj.props, fn(_, prop) {
         fixup_realm_value(prop.value, env, seen_objects, seen_builtins)
         match prop.getter {
           Some(getter_value) =>
@@ -594,7 +594,7 @@ fn fixup_realm_value(
             fixup_realm_value(setter_value, env, seen_objects, seen_builtins)
           None => ()
         }
-      }
+      })
     }
     Array(arr) => {
       if seen_objects.contains(arr.id) {
@@ -613,7 +613,7 @@ fn fixup_realm_value(
           None => ()
         }
       }
-      for _, prop in arr.props {
+      props_iter(arr.props, fn(_, prop) {
         fixup_realm_value(prop.value, env, seen_objects, seen_builtins)
         match prop.getter {
           Some(getter_value) =>
@@ -625,7 +625,7 @@ fn fixup_realm_value(
             fixup_realm_value(setter_value, env, seen_objects, seen_builtins)
           None => ()
         }
-      }
+      })
     }
     Arguments(args) => {
       if seen_objects.contains(args.id) {
@@ -644,7 +644,7 @@ fn fixup_realm_value(
           None => ()
         }
       }
-      for _, prop in args.props {
+      props_iter(args.props, fn(_, prop) {
         fixup_realm_value(prop.value, env, seen_objects, seen_builtins)
         match prop.getter {
           Some(getter_value) =>
@@ -656,7 +656,7 @@ fn fixup_realm_value(
             fixup_realm_value(setter_value, env, seen_objects, seen_builtins)
           None => ()
         }
-      }
+      })
     }
     _ => ()
   }

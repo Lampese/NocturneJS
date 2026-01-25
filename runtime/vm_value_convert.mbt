@@ -234,7 +234,7 @@ fn to_string_value(value : Value) -> String {
         None => "function"
       }
     BoundFunction(bound) =>
-      match bound.props.get("name") {
+      match props_get(bound.props, "name") {
         Some(prop) =>
           match prop.value {
             String(name) =>

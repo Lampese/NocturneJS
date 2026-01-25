@@ -145,7 +145,7 @@ fn constructor_name(value : Value) -> String? {
   match value {
     Function(func) => func.name
     BoundFunction(bound) =>
-      match bound.props.get("name") {
+      match props_get(bound.props, "name") {
         Some(prop) =>
           match prop.value {
             String(name) => Some(name)

@@ -5,7 +5,7 @@ fn get_own_property_descriptor(target : Value, name : String) -> Value raise {
       match obj.proxy_data {
         Some(data) => proxy_get_own_property_descriptor(data, name)
         None =>
-          match obj.props.get(name) {
+          match props_get(obj.props, name) {
             Some(prop) =>
               if obj.is_module_namespace {
                 match module_binding_info(prop.value) {
@@ -57,21 +57,21 @@ fn get_own_property_descriptor(target : Value, name : String) -> Value raise {
           }
       }
     Function(func) => {
-      if name == "prototype" && !func.props.contains(name) {
+      if name == "prototype" && !props_contains(func.props, name) {
         ensure_function_prototype(func)
       }
-      match func.props.get(name) {
+      match props_get(func.props, name) {
         Some(prop) => property_descriptor_object(prop)
         None => Undefined
       }
     }
     BoundFunction(bound) =>
-      match bound.props.get(name) {
+      match props_get(bound.props, name) {
         Some(prop) => property_descriptor_object(prop)
         None => Undefined
       }
     Builtin(builtin) =>
-      match builtin.props.get(name) {
+      match props_get(builtin.props, name) {
         Some(prop) => property_descriptor_object(prop)
         None => Undefined
       }
@@ -94,13 +94,13 @@ fn get_own_property_descriptor(target : Value, name : String) -> Value raise {
                 Undefined
               }
             None =>
-              match arr.props.get(name) {
+              match props_get(arr.props, name) {
                 Some(prop) => property_descriptor_object(prop)
                 None => Undefined
               }
           }
         None =>
-          match arr.props.get(name) {
+          match props_get(arr.props, name) {
             Some(prop) => property_descriptor_object(prop)
             None =>
               match parse_array_index(name) {
@@ -119,7 +119,7 @@ fn get_own_property_descriptor(target : Value, name : String) -> Value raise {
           }
       }
     Arguments(args) =>
-      match args.props.get(name) {
+      match props_get(args.props, name) {
         Some(prop) =>
           match parse_array_index(name) {
             Some(index) =>

@@ -21,9 +21,11 @@ fn gc_release_env(env : Env) -> Unit {
 }
 
 ///|
-fn gc_release_props(props : Map[String, Property]) -> Unit {
+fn gc_release_props(props : Props) -> Unit {
   props_clear(props)
 }
+
+///|
 
 ///|
 fn gc_release_object_tables(obj_id : Int) -> Unit {
@@ -49,6 +51,7 @@ fn gc_release_builtin_tables(builtin_id : Int) -> Unit {
 
 ///|
 fn gc_release_object(obj : ObjectValue) -> Unit {
+  let is_date = obj.date_data is Some(_)
   gc_release_object_tables(obj.id)
   gc_release_props(obj.props)
   rc_replace_optional_value(obj.proto, None)
@@ -186,6 +189,9 @@ fn gc_release_object(obj : ObjectValue) -> Unit {
   obj.weakmap_data = None
   obj.weakset_data = None
   obj.finreg_data = None
+  if is_date {
+    date_pool_put(obj)
+  }
 }
 
 ///|

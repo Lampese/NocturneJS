@@ -16,14 +16,14 @@ fn arguments_set(
       if !args.extensible && !arguments_has_index(args, index) {
         return false
       }
-      if args.props.contains(name) &&
+      if props_contains(args.props, name) &&
         !(index < args.mapped.length() && args.mapped[index]) {
         return set_property_in(args.props, name, value, receiver)
       }
       arguments_set_index(args, index, value)
     }
     None =>
-      if args.extensible || args.props.contains(name) {
+      if args.extensible || props_contains(args.props, name) {
         set_property_in(args.props, name, value, receiver)
       } else {
         false

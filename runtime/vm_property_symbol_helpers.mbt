@@ -1,21 +1,21 @@
 ///|
 fn own_symbol_keys_from_props(
-  props : Map[String, Property],
+  props : Props,
   include_non_enum : Bool,
 ) -> Array[SymbolValue] {
   let symbols : Array[SymbolValue] = []
-  for key, prop in props {
+  props_iter(props, fn(key, prop) {
     if !is_symbol_prop_key(key) {
-      continue
+      return ()
     }
     if !include_non_enum && !prop.enumerable {
-      continue
+      return ()
     }
     match symbol_from_prop_key(key) {
       Some(symbol) => symbols.push(symbol)
       None => ()
     }
-  }
+  })
   symbols
 }
 

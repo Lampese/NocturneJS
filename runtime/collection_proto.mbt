@@ -50,11 +50,11 @@ fn finreg_proto() -> ObjectValue? {
 fn map_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("Map") {
+      match props_get(global_obj.props, "Map") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -63,7 +63,7 @@ fn map_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -83,11 +83,11 @@ fn map_proto_for_env(env : Env) -> ObjectValue? {
 fn set_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("Set") {
+      match props_get(global_obj.props, "Set") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -96,7 +96,7 @@ fn set_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -116,11 +116,11 @@ fn set_proto_for_env(env : Env) -> ObjectValue? {
 fn weakmap_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("WeakMap") {
+      match props_get(global_obj.props, "WeakMap") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -129,7 +129,7 @@ fn weakmap_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -149,11 +149,11 @@ fn weakmap_proto_for_env(env : Env) -> ObjectValue? {
 fn weakset_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("WeakSet") {
+      match props_get(global_obj.props, "WeakSet") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -162,7 +162,7 @@ fn weakset_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -182,11 +182,11 @@ fn weakset_proto_for_env(env : Env) -> ObjectValue? {
 fn weakref_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("WeakRef") {
+      match props_get(global_obj.props, "WeakRef") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -195,7 +195,7 @@ fn weakref_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -215,11 +215,11 @@ fn weakref_proto_for_env(env : Env) -> ObjectValue? {
 fn finreg_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("FinalizationRegistry") {
+      match props_get(global_obj.props, "FinalizationRegistry") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -228,7 +228,7 @@ fn finreg_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)

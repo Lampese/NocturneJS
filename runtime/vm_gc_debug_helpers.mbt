@@ -16,10 +16,10 @@ fn gc_debug_enabled() -> Bool {
 ///|
 fn gc_debug_value_has_prop(value : Value, name : String) -> Bool {
   match value {
-    Object(obj) => obj.props.get(name) is Some(_)
-    Function(func) => func.props.get(name) is Some(_)
-    BoundFunction(bound) => bound.props.get(name) is Some(_)
-    Builtin(builtin) => builtin.props.get(name) is Some(_)
+    Object(obj) => props_get(obj.props, name) is Some(_)
+    Function(func) => props_get(func.props, name) is Some(_)
+    BoundFunction(bound) => props_get(bound.props, name) is Some(_)
+    Builtin(builtin) => props_get(builtin.props, name) is Some(_)
     _ => false
   }
 }
@@ -28,22 +28,22 @@ fn gc_debug_value_has_prop(value : Value, name : String) -> Bool {
 fn gc_debug_prop_value(value : Value, name : String) -> Value? {
   match value {
     Object(obj) =>
-      match obj.props.get(name) {
+      match props_get(obj.props, name) {
         Some(prop) => Some(prop.value)
         None => None
       }
     Function(func) =>
-      match func.props.get(name) {
+      match props_get(func.props, name) {
         Some(prop) => Some(prop.value)
         None => None
       }
     BoundFunction(bound) =>
-      match bound.props.get(name) {
+      match props_get(bound.props, name) {
         Some(prop) => Some(prop.value)
         None => None
       }
     Builtin(builtin) =>
-      match builtin.props.get(name) {
+      match props_get(builtin.props, name) {
         Some(prop) => Some(prop.value)
         None => None
       }
@@ -79,7 +79,7 @@ fn gc_debug_dump_roots(phase : String) -> Unit {
       match global_object(env) {
         Some(obj) => {
           root_global_present = true
-          match obj.props.get("assert") {
+          match props_get(obj.props, "assert") {
             Some(prop) => {
               root_assert_present = true
               if gc_debug_value_has_prop(prop.value, "deepEqual") {
@@ -116,7 +116,7 @@ fn gc_debug_dump_roots(phase : String) -> Unit {
       match global_object(env) {
         Some(obj) => {
           global_present = true
-          match obj.props.get("assert") {
+          match props_get(obj.props, "assert") {
             Some(prop) => {
               assert_present = true
               if gc_debug_value_has_prop(prop.value, "deepEqual") {
@@ -227,7 +227,7 @@ fn gc_debug_dump_assert_meta(state : GcState, phase : String) -> Unit {
       gc_debug_dump_meta_for_env(state, "root_env@\{phase}", env)
       match global_object(env) {
         Some(obj) =>
-          match obj.props.get("assert") {
+          match props_get(obj.props, "assert") {
             Some(prop) => {
               let assert_value = prop.value
               gc_debug_dump_meta_for_value(

@@ -1,11 +1,11 @@
 ///|
 fn set_property_in(
-  props : Map[String, Property],
+  props : Props,
   name : String,
   value : Value,
   receiver : Value,
 ) -> Bool raise {
-  match props.get(name) {
+  match props_get(props, name) {
     Some(prop) =>
       match prop.setter {
         Some(setter) =>
@@ -40,7 +40,7 @@ fn set_property_in(
 
 ///|
 fn set_property_with_proto(
-  props : Map[String, Property],
+  props : Props,
   proto : Value?,
   name : String,
   value : Value,
@@ -48,7 +48,7 @@ fn set_property_with_proto(
   extensible : Bool,
 ) -> Bool raise {
   let _ = extensible
-  if props.contains(name) {
+  if props_contains(props, name) {
     return set_property_in(props, name, value, receiver)
   }
   match proto {

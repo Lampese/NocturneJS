@@ -286,9 +286,9 @@ fn call_builtin_module(
           }
           match props {
             Some(props) =>
-              for name, prop in props {
+              props_iter_raise(props, fn(name, prop) raise {
                 if name == "default" || !prop.enumerable {
-                  continue
+                  return ()
                 }
                 let mut is_ambiguous = false
                 match module_path {
@@ -305,17 +305,17 @@ fn call_builtin_module(
                   None => ()
                 }
                 if is_ambiguous {
-                  if exports.props.contains(name) {
+                  if props_contains(exports.props, name) {
                     props_remove(exports.props, name)
                   }
                   match module_path {
                     Some(path) => module_namespace_remove_export(path, name)
                     None => ()
                   }
-                  continue
+                  return ()
                 }
-                if exports.props.contains(name) {
-                  continue
+                if props_contains(exports.props, name) {
+                  return ()
                 }
                 let value = new_module_binding_value(module_obj, name)
                 props_set(exports.props, name, Property::{
@@ -330,7 +330,7 @@ fn call_builtin_module(
                   Some(path) => module_namespace_add_export(path, exports, name)
                   None => ()
                 }
-              }
+              })
             None => ()
           }
           module_obj

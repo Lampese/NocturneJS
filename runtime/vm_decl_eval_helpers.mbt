@@ -110,7 +110,7 @@ fn eval_function_decl(env : Env, func : @engine.FunctionDef) -> Unit raise {
         None =>
           match env.var_object {
             Some(Object(obj)) =>
-              match obj.props.get(name) {
+              match props_get(obj.props, name) {
                 Some(prop) =>
                   if is_data_property(prop) {
                     prop.value
@@ -124,7 +124,7 @@ fn eval_function_decl(env : Env, func : @engine.FunctionDef) -> Unit raise {
               if env.parent is None {
                 match global_object(env) {
                   Some(obj) =>
-                    match obj.props.get(name) {
+                    match props_get(obj.props, name) {
                       Some(prop) =>
                         if is_data_property(prop) {
                           prop.value

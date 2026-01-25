@@ -19,7 +19,7 @@ fn bytecode_stack_peek(stack : Array[Value]) -> Value {
 fn bytecode_fast_get_prop(target : Value, name : String) -> Value? raise {
   match target {
     Object(obj) =>
-      if obj.date_data is Some(_) && obj.props.is_empty() {
+      if obj.date_data is Some(_) && props_is_empty(obj.props) {
         match obj.proto {
           Some(Object(proto_obj)) => property_get_from_props(
             proto_obj.props,

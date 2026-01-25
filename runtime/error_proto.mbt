@@ -66,11 +66,11 @@ fn uri_error_proto() -> ObjectValue? {
 fn error_proto_for_env_name(env : Env, name : String) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get(name) {
+      match props_get(global_obj.props, name) {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -79,7 +79,7 @@ fn error_proto_for_env_name(env : Env, name : String) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)

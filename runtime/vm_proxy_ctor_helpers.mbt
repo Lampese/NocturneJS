@@ -10,7 +10,7 @@ fn new_proxy_value(target : Value, handler : Value) -> Value raise {
   let constructable = is_constructor_value(target)
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto: None,
     string_data: None,
     number_data: None,

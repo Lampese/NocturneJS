@@ -2,7 +2,7 @@
 pub struct BuiltinValue {
   kind : BuiltinFunction
   id : Int
-  props : Map[String, Property]
+  props : Props
   mut this_value : Value?
   mut proto : Value?
   mut extensible : Bool

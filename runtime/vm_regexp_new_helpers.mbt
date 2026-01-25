@@ -31,7 +31,7 @@ fn new_regexp_value(
   } noraise {
     value => value
   }
-  let props = Map::new()
+  let props = props_new()
   props_set(props, "lastIndex", property_data_non_enum_non_config(Number(0.0)))
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),

@@ -3,7 +3,7 @@ fn new_array_value_with_proto(
   elements : Array[Value?],
   proto? : Value? = None,
 ) -> Value {
-  let props = Map::new()
+  let props = props_new()
   props_set(props, 
     "length",
     property_data_non_enum_non_config(

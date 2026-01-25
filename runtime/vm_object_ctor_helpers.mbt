@@ -2,7 +2,7 @@
 fn new_object_value_with_proto(proto : Value?) -> Value {
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto,
     string_data: None,
     number_data: None,
@@ -42,7 +42,7 @@ fn new_object_value_with_proto(proto : Value?) -> Value {
 fn new_object_struct(proto : Value?) -> ObjectValue {
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto,
     string_data: None,
     number_data: None,

@@ -20,13 +20,13 @@ pub struct FunctionValue {
   body : Array[@engine.Stmt]
   env : Env
   id : Int
-  props : Map[String, Property]
+  props : Props
   mut proto : Value?
   mut home_object : Value?
   mut super_constructor : Value?
   mut instance_fields : Array[ClassFieldRecord]
   private_instance_fields : Array[(String, @engine.Expr?)]
-  mut private_instance_props : Map[String, Property]
+  mut private_instance_props : Props
   mut is_constructor : Bool
   mut is_class_constructor : Bool
   mut is_default_constructor : Bool
@@ -126,7 +126,7 @@ pub struct BoundFunctionValue {
   mut target : Value
   mut bound_this : Value
   bound_args : Array[Value]
-  props : Map[String, Property]
+  props : Props
   mut proto : Value?
   is_constructor : Bool
   mut extensible : Bool

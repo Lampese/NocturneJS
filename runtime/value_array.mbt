@@ -3,7 +3,7 @@ pub struct ArrayValue {
   id : Int
   elements : Array[Value?]
   mut proto : Value?
-  props : Map[String, Property]
+  props : Props
   mut typed_array_data : TypedArrayData?
   mut extensible : Bool
 }
@@ -27,7 +27,7 @@ pub struct ArgumentsValue {
   params : Array[String]
   mapped : Array[Bool]
   elements : Array[Value?]
-  props : Map[String, Property]
+  props : Props
   mut proto : Value?
   mut extensible : Bool
 }

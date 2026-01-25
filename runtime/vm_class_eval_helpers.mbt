@@ -251,7 +251,7 @@ fn eval_class(
   let static_super_ctor = static_super_constructor_for_env(class_env, ctor_func)
   let instance_fields : Array[ClassFieldRecord] = []
   let static_inits : Array[ClassStaticInit] = []
-  let private_instance_props : Map[String, Property] = Map::new()
+  let private_instance_props = props_new()
   let _ = with_gc_frame(fn() raise {
     let _ = gc_root_push(Value::Function(ctor_func))
     let _ = gc_root_push(Value::Object(proto_obj))
@@ -619,7 +619,7 @@ fn gen_eval_class_static_inits(
   static_super_ctor : Value?,
   static_inits : Array[ClassStaticInit],
   instance_fields : Array[ClassFieldRecord],
-  private_instance_props : Map[String, Property],
+  private_instance_props : Props,
 ) -> GenStep raise {
   if index >= static_inits.length() {
     ctor_func.private_instance_props = private_instance_props
@@ -749,7 +749,7 @@ fn gen_eval_class_members(
   class_name : String?,
   instance_fields : Array[ClassFieldRecord],
   static_inits : Array[ClassStaticInit],
-  private_instance_props : Map[String, Property],
+  private_instance_props : Props,
 ) -> GenStep raise {
   if index >= members.length() {
     match class_name {
@@ -1349,7 +1349,7 @@ fn gen_eval_class(
     )
     let instance_fields : Array[ClassFieldRecord] = []
     let static_inits : Array[ClassStaticInit] = []
-    let private_instance_props : Map[String, Property] = Map::new()
+    let private_instance_props = props_new()
     gen_with_root_frame(fn() raise {
       let _ = gen_root_push(Value::Function(ctor_func))
       let _ = gen_root_push(Value::Object(proto_obj))

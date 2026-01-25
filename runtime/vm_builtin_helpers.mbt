@@ -1,6 +1,6 @@
 ///|
 fn new_builtin_value(kind : BuiltinFunction) -> Value {
-  let props = Map::new()
+  let props = props_new()
   props_set(props, 
     "length",
     property_data_readonly(Number(Double::from_int(builtin_length(kind)))),

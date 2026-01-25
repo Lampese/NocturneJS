@@ -54,14 +54,14 @@ fn string_property_get(value : String, name : String) -> Value raise {
 
 ///|
 fn ordered_prop_keys(
-  props : Map[String, Property],
+  props : Props,
   include_non_enum : Bool,
 ) -> Array[String] {
   let indices : Array[Int64] = []
   let non_indices : Array[String] = []
-  for key, prop in props {
+  props_iter(props, fn(key, prop) {
     if is_symbol_prop_key(key) || is_private_prop_key(key) {
-      continue
+      return ()
     }
     if include_non_enum || prop.enumerable {
       match array_index_from_name(key) {
@@ -69,7 +69,7 @@ fn ordered_prop_keys(
         None => non_indices.push(key)
       }
     }
-  }
+  })
   sort_int64s(indices)
   let names : Array[String] = []
   for index in indices {
@@ -83,19 +83,19 @@ fn ordered_prop_keys(
 
 ///|
 fn module_namespace_prop_keys(
-  props : Map[String, Property],
+  props : Props,
   include_non_enum : Bool,
 ) -> Array[String] {
   let names : Array[String] = []
-  for key, prop in props {
+  props_iter(props, fn(key, prop) {
     if is_symbol_prop_key(key) || is_private_prop_key(key) {
-      continue
+      return ()
     }
     if !include_non_enum && !prop.enumerable {
-      continue
+      return ()
     }
     names.push(key)
-  }
+  })
   sort_strings_lex(names)
   names
 }

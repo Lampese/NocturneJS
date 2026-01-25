@@ -686,7 +686,7 @@ fn update_module_export_binding(
       match module_env_export_names_get(env.id, binding) {
         Some(names) =>
           for export_name in names {
-            match exports.props.get(export_name) {
+            match props_get(exports.props, export_name) {
               Some(prop) =>
                 props_set(exports.props, export_name, Property::{
                   value,

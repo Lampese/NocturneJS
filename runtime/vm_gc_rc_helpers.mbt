@@ -165,33 +165,44 @@ fn rc_decref_property(name : String, prop : Property) -> Unit {
 
 ///|
 fn props_set(
-  props : Map[String, Property],
+  props : Props,
   name : String,
   prop : Property,
 ) -> Unit {
-  match props.get(name) {
+  let map = props_ensure_map(props)
+  match map.get(name) {
     Some(existing) => rc_decref_property(name, existing)
     None => ()
   }
   rc_incref_property(name, prop)
-  props.set(name, prop)
+  map.set(name, prop)
 }
 
 ///|
-fn props_remove(props : Map[String, Property], name : String) -> Unit {
-  match props.get(name) {
+fn props_remove(props : Props, name : String) -> Unit {
+  if props.shared_empty {
+    return ()
+  }
+  match props.map.get(name) {
     Some(existing) => rc_decref_property(name, existing)
     None => ()
   }
-  let _ = props.remove(name)
+  let _ = props.map.remove(name)
+  if props.map.is_empty() {
+    props_reset_empty(props)
+  }
 }
 
 ///|
-fn props_clear(props : Map[String, Property]) -> Unit {
-  for name, prop in props {
+fn props_clear(props : Props) -> Unit {
+  if props.shared_empty {
+    return ()
+  }
+  for name, prop in props.map {
     rc_decref_property(name, prop)
   }
-  props.clear()
+  props.map.clear()
+  props_reset_empty(props)
 }
 
 ///|

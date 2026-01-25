@@ -322,7 +322,7 @@ fn eval_private_in(env : Env, name : String, target : Value) -> Bool raise {
   let key_name = env_private_key_checked(env, name)
   match props_map_for_value(target) {
     Some(props) =>
-      match props.get(key_name) {
+      match props_get(props, key_name) {
         Some(_) => true
         None => false
       }
@@ -632,7 +632,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
             }
             None => ()
           }
-          let ok = match obj.props.get(name) {
+          let ok = match props_get(obj.props, name) {
             Some(prop) =>
               if !prop.configurable {
                 false
@@ -646,10 +646,10 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
         }
       }
     Function(func) => {
-      if name == "prototype" && !func.props.contains(name) {
+      if name == "prototype" && !props_contains(func.props, name) {
         ensure_function_prototype(func)
       }
-      let ok = match func.props.get(name) {
+      let ok = match props_get(func.props, name) {
         Some(prop) =>
           if !prop.configurable {
             false
@@ -662,7 +662,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
       ok
     }
     BoundFunction(bound) => {
-      let ok = match bound.props.get(name) {
+      let ok = match props_get(bound.props, name) {
         Some(prop) =>
           if !prop.configurable {
             false
@@ -675,7 +675,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
       ok
     }
     Builtin(builtin) => {
-      let ok = match builtin.props.get(name) {
+      let ok = match props_get(builtin.props, name) {
         Some(prop) =>
           if !prop.configurable {
             false
@@ -694,7 +694,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
             Some(index) => !typed_array_is_valid_integer_index(data, index)
             None => {
               let mut ok = true
-              match arr.props.get(name) {
+              match props_get(arr.props, name) {
                 Some(prop) =>
                   if !prop.configurable {
                     ok = false
@@ -711,7 +711,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
           match parse_array_index(name) {
             Some(index) =>
               if index >= 0 {
-                match arr.props.get(name) {
+                match props_get(arr.props, name) {
                   Some(prop) =>
                     if !prop.configurable {
                       ok = false
@@ -726,7 +726,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
                 }
               }
             None =>
-              match arr.props.get(name) {
+              match props_get(arr.props, name) {
                 Some(prop) =>
                   if !prop.configurable {
                     ok = false
@@ -744,7 +744,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
       match parse_array_index(name) {
         Some(index) =>
           if index >= 0 {
-            match args.props.get(name) {
+            match props_get(args.props, name) {
               Some(prop) =>
                 if !prop.configurable {
                   ok = false
@@ -762,7 +762,7 @@ fn delete_property_value(target : Value, name : String) -> Bool raise {
             }
           }
         None =>
-          match args.props.get(name) {
+          match props_get(args.props, name) {
             Some(prop) =>
               if !prop.configurable {
                 ok = false

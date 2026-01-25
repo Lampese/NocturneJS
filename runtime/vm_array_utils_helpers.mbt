@@ -8,7 +8,7 @@ fn array_has_property(arr : ArrayValue, name : String) -> Bool raise {
       match canonical_numeric_index_string(name) {
         Some(index) => return typed_array_is_valid_integer_index(data, index)
         None => {
-          if arr.props.contains(name) {
+          if props_contains(arr.props, name) {
             return true
           }
           match arr.proto {
@@ -19,7 +19,7 @@ fn array_has_property(arr : ArrayValue, name : String) -> Bool raise {
       }
     None => ()
   }
-  if arr.props.contains(name) {
+  if props_contains(arr.props, name) {
     return true
   }
   match parse_array_index(name) {

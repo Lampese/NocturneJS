@@ -53,7 +53,7 @@ fn call_constructor(
             )
             if is_object_like(result) &&
               (
-                !func.private_instance_props.is_empty() ||
+                !props_is_empty(func.private_instance_props) ||
                 !func.instance_fields.is_empty()
               ) {
               let frame = Env::new(Some(func.env))

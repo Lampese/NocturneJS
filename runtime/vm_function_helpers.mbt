@@ -4,7 +4,7 @@ fn function_property_get_with_receiver(
   name : String,
   receiver : Value,
 ) -> Value raise {
-  if name == "prototype" && !func.props.contains(name) {
+  if name == "prototype" && !props_contains(func.props, name) {
     ensure_function_prototype(func)
   }
   property_get_from_chain(func.props, func.proto, name, receiver)
@@ -29,7 +29,7 @@ fn ensure_function_prototype(func : FunctionValue) -> Unit {
   if !func.is_constructor && !func.is_generator {
     return
   }
-  if func.props.contains("prototype") {
+  if props_contains(func.props, "prototype") {
     return
   }
   let proto = if func.is_generator {
@@ -77,7 +77,7 @@ fn to_function_value(
   func : @engine.FunctionDef,
   local_name_binding : Bool,
 ) -> FunctionValue {
-  let props = Map::new()
+  let props = props_new()
   let mut len = 0
   for i = 0; i < func.params.length(); i = i + 1 {
     if func.params[i].is_rest {
@@ -186,7 +186,7 @@ fn to_function_value(
     super_constructor,
     instance_fields: [],
     private_instance_fields: [],
-    private_instance_props: Map::new(),
+    private_instance_props: props_new(),
     is_constructor: !func.is_generator && !func.is_async && !func.is_arrow,
     is_class_constructor: false,
     is_default_constructor: false,
@@ -249,7 +249,7 @@ fn new_bound_function(
     String(s) => s
     _ => ""
   }
-  let props = Map::new()
+  let props = props_new()
   props_set(props, "length", property_data_readonly(Number(new_len_num)))
   props_set(props, "name", property_data_readonly(String("bound " + name)))
   let proto = match function_realm_env(target) {
@@ -523,11 +523,10 @@ fn init_instance_fields(
   env : Env,
   this_value : Value,
 ) -> Unit raise {
-  if !func.private_instance_props.is_empty() {
-    for entry in func.private_instance_props {
-      let (key, prop) = entry
+  if !props_is_empty(func.private_instance_props) {
+    props_iter_raise(func.private_instance_props, fn(key, prop) raise {
       define_private_property(this_value, key, prop)
-    }
+    })
   }
   if !func.instance_fields.is_empty() {
     for field in func.instance_fields {
@@ -724,7 +723,7 @@ fn new_arguments_value(
       i = i - 1
     }
   }
-  let props : Map[String, Property] = Map::new()
+  let props = props_new()
   props_set(props, "length", property_data_non_enum(Number(Double::from_int(arg_len))))
   if is_strict || !mapped_allowed {
     let thrower = throw_type_error_value_for_env(env)
@@ -737,14 +736,14 @@ fn new_arguments_value(
     Some(array_proto_obj) => {
       match symbol_iterator_key() {
         Some(key) =>
-          match array_proto_obj.props.get(key) {
+          match props_get(array_proto_obj.props, key) {
             Some(prop) => array_iterator_value = Some(prop.value)
             None => ()
           }
         None => ()
       }
       if array_iterator_value is None {
-        match array_proto_obj.props.get("values") {
+        match props_get(array_proto_obj.props, "values") {
           Some(prop) => array_iterator_value = Some(prop.value)
           None => ()
         }
@@ -834,7 +833,7 @@ fn set_anonymous_function_name(
     Function(func) =>
       if func.name is None {
         let mut allow = true
-        match func.props.get("name") {
+        match props_get(func.props, "name") {
           Some(prop) =>
             match prop.value {
               String(value) => allow = value == ""

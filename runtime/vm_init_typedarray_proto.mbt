@@ -237,7 +237,7 @@ fn init_typed_array_proto(
       new_builtin_value(BuiltinFunction::TypedArrayIncludes),
     ),
   )
-  match array_proto_obj.props.get("toString") {
+  match props_get(array_proto_obj.props, "toString") {
     Some(prop) =>
       props_set(typed_array_proto_obj.props, 
         "toString",

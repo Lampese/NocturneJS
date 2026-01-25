@@ -378,7 +378,7 @@ fn json_stringify_array(arr : ArrayValue) -> String raise {
   for i = 0; i < len; i = i + 1 {
     let name = Int::to_string(i)
     let mut value_opt : Value? = None
-    match arr.props.get(name) {
+    match props_get(arr.props, name) {
       Some(prop) => value_opt = Some(prop.value)
       None => ()
     }
@@ -420,7 +420,7 @@ fn json_stringify_array_with_indent(
   for i = 0; i < len; i = i + 1 {
     let name = Int::to_string(i)
     let mut value_opt : Value? = None
-    match arr.props.get(name) {
+    match props_get(arr.props, name) {
       Some(prop) => value_opt = Some(prop.value)
       None => ()
     }
@@ -519,12 +519,12 @@ fn json_stringify_arguments(args : ArgumentsValue) -> String raise {
       }
     }
   }
-  for key, prop in args.props {
+  props_iter_raise(args.props, fn(key, prop) raise {
     if is_symbol_prop_key(key) || is_private_prop_key(key) {
-      continue
+      return ()
     }
     if !prop.enumerable {
-      continue
+      return ()
     }
     match parse_array_index(key) {
       Some(index) =>
@@ -542,7 +542,7 @@ fn json_stringify_arguments(args : ArgumentsValue) -> String raise {
           None => ()
         }
     }
-  }
+  })
   "{" + parts.join(",") + "}"
 }
 
@@ -570,12 +570,12 @@ fn json_stringify_arguments_with_indent(
       }
     }
   }
-  for key, prop in args.props {
+  props_iter_raise(args.props, fn(key, prop) raise {
     if is_symbol_prop_key(key) || is_private_prop_key(key) {
-      continue
+      return ()
     }
     if !prop.enumerable {
-      continue
+      return ()
     }
     match parse_array_index(key) {
       Some(index) =>
@@ -600,7 +600,7 @@ fn json_stringify_arguments_with_indent(
           None => ()
         }
     }
-  }
+  })
   if parts.is_empty() {
     return "{}"
   }

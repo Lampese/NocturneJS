@@ -180,7 +180,7 @@ fn module_async_eval(
     Some(value) => Some(value)
     None => value_from_object(async_generator_proto())
   }
-  let proto_value = match func_value.props.get("prototype") {
+  let proto_value = match props_get(func_value.props, "prototype") {
     Some(prop) =>
       if is_object_like(prop.value) {
         Some(prop.value)
@@ -191,7 +191,7 @@ fn module_async_eval(
   }
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto: proto_value,
     string_data: None,
     number_data: None,

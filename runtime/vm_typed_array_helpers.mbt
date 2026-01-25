@@ -49,7 +49,7 @@ fn new_typed_array_view(
     elements.push(None)
     i = i + 1
   }
-  let props = Map::new()
+  let props = props_new()
   let bpe = typed_array_bytes_per_element(kind)
   let proto_value = match proto {
     Some(value) => Some(value)
@@ -589,7 +589,7 @@ fn require_typed_array(value : Value?) -> (ArrayValue, TypedArrayData) raise {
         id: alloc_id(),
         elements: [],
         proto: value_from_object(array_proto()),
-        props: Map::new(),
+        props: props_new(),
         typed_array_data: None,
         extensible: true,
       })

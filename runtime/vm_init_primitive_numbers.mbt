@@ -3,7 +3,7 @@ fn init_number_proto(object_proto_obj : ObjectValue) -> (ObjectValue, Value) {
   let number_proto_value = {
     let obj = register_object_value(ObjectValue::{
       id: alloc_id(),
-      props: Map::new(),
+      props: props_new(),
       proto: Some(Object(object_proto_obj)),
       string_data: None,
       number_data: Some(0.0),
@@ -81,7 +81,7 @@ fn init_bool_proto(object_proto_obj : ObjectValue) -> (ObjectValue, Value) {
   let bool_proto_value = {
     let obj = register_object_value(ObjectValue::{
       id: alloc_id(),
-      props: Map::new(),
+      props: props_new(),
       proto: Some(Object(object_proto_obj)),
       string_data: None,
       number_data: None,

@@ -85,7 +85,7 @@ fn arguments_has_index(args : ArgumentsValue, index : Int) -> Bool {
     return false
   }
   let name = Int::to_string(index)
-  if args.props.contains(name) {
+  if props_contains(args.props, name) {
     return true
   }
   if index >= args.elements.length() {
@@ -112,7 +112,7 @@ fn arguments_index_value(args : ArgumentsValue, index : Int) -> Value {
     }
   }
   let name = Int::to_string(index)
-  match args.props.get(name) {
+  match props_get(args.props, name) {
     Some(prop) => prop.value
     None =>
       match args.elements[index] {

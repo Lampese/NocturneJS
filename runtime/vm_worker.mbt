@@ -321,11 +321,11 @@ fn clone_worker_value_inner(
                                           seen.set(obj.id, clone_value)
                                           match clone_value {
                                             Object(target) =>
-                                              for key, prop in obj.props {
+                                              props_iter_raise(obj.props, fn(key, prop) raise {
                                                 if is_symbol_prop_key(key) ||
                                                   is_private_prop_key(key) ||
                                                   !prop.enumerable {
-                                                  continue
+                                                  return ()
                                                 }
                                                 let cloned = clone_worker_value_inner(
                                                   prop.value,
@@ -335,7 +335,7 @@ fn clone_worker_value_inner(
                                                   key,
                                                   property_data(cloned),
                                                 )
-                                              }
+                                              })
                                             _ => ()
                                           }
                                           clone_value

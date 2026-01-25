@@ -23,7 +23,7 @@ fn has_property(value : Value, name : String) -> Bool raise {
           }
       }
     Function(func) => {
-      if name == "prototype" && !func.props.contains(name) {
+      if name == "prototype" && !props_contains(func.props, name) {
         ensure_function_prototype(func)
       }
       has_property_in_chain(func.props, func.proto, name)
@@ -82,7 +82,7 @@ fn arguments_has_property(args : ArgumentsValue, name : String) -> Bool raise {
       }
     None => ()
   }
-  if args.props.contains(name) {
+  if props_contains(args.props, name) {
     return true
   }
   match args.proto {
@@ -93,11 +93,11 @@ fn arguments_has_property(args : ArgumentsValue, name : String) -> Bool raise {
 
 ///|
 fn has_property_in_chain(
-  props : Map[String, Property],
+  props : Props,
   proto : Value?,
   name : String,
 ) -> Bool raise {
-  if props.contains(name) {
+  if props_contains(props, name) {
     return true
   }
   match proto {

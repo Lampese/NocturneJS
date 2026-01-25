@@ -9,7 +9,7 @@ struct ProxyData {
 ///|
 pub struct ObjectValue {
   id : Int
-  props : Map[String, Property]
+  props : Props
   mut proto : Value?
   string_data : String?
   number_data : Double?

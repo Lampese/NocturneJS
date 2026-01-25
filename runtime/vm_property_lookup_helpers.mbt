@@ -30,7 +30,7 @@ fn global_property_value(name : String) -> Value? raise {
 }
 
 ///|
-fn props_map_for_value(value : Value) -> Map[String, Property]? {
+fn props_map_for_value(value : Value) -> Props? {
   match value {
     Object(obj) => Some(obj.props)
     Function(func) => Some(func.props)

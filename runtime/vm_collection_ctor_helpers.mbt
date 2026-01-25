@@ -6,7 +6,7 @@ fn new_map_value_with_proto(proto : Value?) -> Value {
   }
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto: final_proto,
     string_data: None,
     number_data: None,
@@ -50,7 +50,7 @@ fn new_set_value_with_proto(proto : Value?) -> Value {
   }
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto: final_proto,
     string_data: None,
     number_data: None,
@@ -99,7 +99,7 @@ fn new_weakmap_value_with_proto(proto : Value?) -> Value {
   }
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto: final_proto,
     string_data: None,
     number_data: None,
@@ -143,7 +143,7 @@ fn new_weakset_value_with_proto(proto : Value?) -> Value {
   }
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto: final_proto,
     string_data: None,
     number_data: None,
@@ -187,7 +187,7 @@ fn new_weakref_value(target : Value, proto : Value?) -> Value {
   }
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto: proto_value,
     string_data: None,
     number_data: None,
@@ -232,7 +232,7 @@ fn new_finreg_value(callback : Value, realm_env : Env, proto : Value?) -> Value 
   let realm_root = realm_env_from_env(realm_env)
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto: proto_value,
     string_data: None,
     number_data: None,

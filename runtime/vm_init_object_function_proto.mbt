@@ -7,7 +7,7 @@ fn init_object_and_function_proto(env : Env) -> (ObjectValue, Value, Value) {
   }
   object_proto_obj.immutable_proto = true
   set_proto_ref(object_proto_ref, Some(object_proto_obj))
-  let function_proto_props = Map::new()
+  let function_proto_props = props_new()
   props_set(function_proto_props, "length", property_data_readonly(Number(0.0)))
   props_set(function_proto_props, "name", property_data_readonly(String("")))
   let function_proto_value = {
@@ -30,7 +30,7 @@ fn init_object_and_function_proto(env : Env) -> (ObjectValue, Value, Value) {
       super_constructor: None,
       instance_fields: [],
       private_instance_fields: [],
-      private_instance_props: Map::new(),
+      private_instance_props: props_new(),
       is_constructor: false,
       is_class_constructor: false,
       is_default_constructor: false,

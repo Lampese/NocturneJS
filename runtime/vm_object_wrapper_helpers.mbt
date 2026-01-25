@@ -1,11 +1,42 @@
 ///|
+let date_pool_limit : Int = 1024
+
+///|
+let date_pool_ref : Ref[Array[ObjectValue]] = Ref::new([])
+
+///|
+fn date_pool_take() -> ObjectValue? {
+  let mut value : ObjectValue? = None
+  date_pool_ref.update(fn(pool) {
+    match pool.pop() {
+      Some(obj) => {
+        value = Some(obj)
+        pool
+      }
+      None => pool
+    }
+  })
+  value
+}
+
+///|
+fn date_pool_put(obj : ObjectValue) -> Unit {
+  date_pool_ref.update(fn(pool) {
+    if pool.length() < date_pool_limit {
+      pool.push(obj)
+    }
+    pool
+  })
+}
+
+///|
 fn new_string_object(
   value : String,
   proto? : Value? = value_from_object(string_proto()),
 ) -> Value {
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto,
     string_data: Some(value),
     number_data: None,
@@ -48,7 +79,7 @@ fn new_number_object(
 ) -> Value {
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto,
     string_data: None,
     number_data: Some(value),
@@ -89,12 +120,46 @@ fn new_date_value(
   value : Double,
   proto? : Value? = value_from_object(date_proto()),
 ) -> Value {
-  let obj = new_object_value_with_proto(proto)
-  match obj {
-    Object(value_obj) => value_obj.date_data = Some(value)
-    _ => ()
+  match date_pool_take() {
+    Some(obj) => {
+      props_reset_empty(obj.props)
+      rc_replace_optional_value(obj.proto, proto)
+      obj.proto = proto
+      obj.regexp_data = None
+      obj.generator_data = None
+      obj.async_generator_data = None
+      obj.proxy_data = None
+      obj.map_data = None
+      obj.set_data = None
+      obj.map_iter_data = None
+      obj.set_iter_data = None
+      obj.iterator_wrap_data = None
+      obj.iterator_concat_data = None
+      obj.iterator_helper_data = None
+      obj.weakmap_data = None
+      obj.weakset_data = None
+      obj.weakref_data = None
+      obj.finreg_data = None
+      obj.array_buffer_data = None
+      obj.dataview_data = None
+      obj.is_error = false
+      obj.is_module_namespace = false
+      obj.realm_env = None
+      obj.immutable_proto = false
+      obj.extensible = true
+      obj.date_data = Some(value)
+      let _ = register_object_value(obj)
+      Object(obj)
+    }
+    None => {
+      let obj = new_object_value_with_proto(proto)
+      match obj {
+        Object(value_obj) => value_obj.date_data = Some(value)
+        _ => ()
+      }
+      obj
+    }
   }
-  obj
 }
 
 ///|
@@ -104,7 +169,7 @@ fn new_bool_object(
 ) -> Value {
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto,
     string_data: None,
     number_data: None,
@@ -147,7 +212,7 @@ fn new_bigint_object(
 ) -> Value {
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto,
     string_data: None,
     number_data: None,
@@ -190,7 +255,7 @@ fn new_symbol_object(
 ) -> Value {
   let obj = register_object_value(ObjectValue::{
     id: alloc_id(),
-    props: Map::new(),
+    props: props_new(),
     proto,
     string_data: None,
     number_data: None,

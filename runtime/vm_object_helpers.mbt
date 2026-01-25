@@ -625,9 +625,9 @@ fn string_own_keys(obj : ObjectValue, include_non_enum : Bool) -> Array[String] 
         seen.set(index, true)
         indices.push(index)
       }
-      for key, prop in obj.props {
+      props_iter(obj.props, fn(key, prop) {
         if is_symbol_prop_key(key) || is_private_prop_key(key) {
-          continue
+          return ()
         }
         if include_non_enum || prop.enumerable {
           match array_index_from_name(key) {
@@ -639,13 +639,13 @@ fn string_own_keys(obj : ObjectValue, include_non_enum : Bool) -> Array[String] 
             None => non_indices.push(key)
           }
         }
-      }
+      })
       sort_int64s(indices)
       let names : Array[String] = []
       for index in indices {
         names.push(Int64::to_string(index))
       }
-      if include_non_enum && !obj.props.contains("length") {
+      if include_non_enum && !props_contains(obj.props, "length") {
         names.push("length")
       }
       for name in non_indices {
@@ -677,7 +677,7 @@ fn array_own_keys(arr : ArrayValue, include_non_enum : Bool) -> Array[String] {
       indices.push(index)
     } else {
       let name = Int::to_string(i)
-      match arr.props.get(name) {
+      match props_get(arr.props, name) {
         Some(prop) =>
           if include_non_enum || prop.enumerable {
             let index = Int64::from_int(i)
@@ -696,9 +696,9 @@ fn array_own_keys(arr : ArrayValue, include_non_enum : Bool) -> Array[String] {
       }
     }
   }
-  for key, prop in arr.props {
+  props_iter(arr.props, fn(key, prop) {
     if is_symbol_prop_key(key) || is_private_prop_key(key) {
-      continue
+      return ()
     }
     if include_non_enum || prop.enumerable {
       match array_index_from_name(key) {
@@ -710,7 +710,7 @@ fn array_own_keys(arr : ArrayValue, include_non_enum : Bool) -> Array[String] {
         None => non_indices.push(key)
       }
     }
-  }
+  })
   sort_int64s(indices)
   let names : Array[String] = []
   for index in indices {
@@ -733,7 +733,7 @@ fn arguments_own_keys(
   let len = args.elements.length()
   for i = 0; i < len; i = i + 1 {
     let name = Int::to_string(i)
-    match args.props.get(name) {
+    match props_get(args.props, name) {
       Some(prop) =>
         if include_non_enum || prop.enumerable {
           let index = Int64::from_int(i)
@@ -748,9 +748,9 @@ fn arguments_own_keys(
         }
     }
   }
-  for key, prop in args.props {
+  props_iter(args.props, fn(key, prop) {
     if is_symbol_prop_key(key) || is_private_prop_key(key) {
-      continue
+      return ()
     }
     if include_non_enum || prop.enumerable {
       match array_index_from_name(key) {
@@ -762,7 +762,7 @@ fn arguments_own_keys(
         None => non_indices.push(key)
       }
     }
-  }
+  })
   sort_int64s(indices)
   let names : Array[String] = []
   for index in indices {

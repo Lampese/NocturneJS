@@ -91,11 +91,11 @@ fn typed_array_proto_for_kind(kind : TypedArrayKind) -> ObjectValue? {
 fn array_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("Array") {
+      match props_get(global_obj.props, "Array") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -104,7 +104,7 @@ fn array_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -124,11 +124,11 @@ fn array_proto_for_env(env : Env) -> ObjectValue? {
 fn array_buffer_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("ArrayBuffer") {
+      match props_get(global_obj.props, "ArrayBuffer") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -137,7 +137,7 @@ fn array_buffer_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -157,11 +157,11 @@ fn array_buffer_proto_for_env(env : Env) -> ObjectValue? {
 fn shared_array_buffer_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("SharedArrayBuffer") {
+      match props_get(global_obj.props, "SharedArrayBuffer") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -170,7 +170,7 @@ fn shared_array_buffer_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -190,11 +190,11 @@ fn shared_array_buffer_proto_for_env(env : Env) -> ObjectValue? {
 fn dataview_proto_for_env(env : Env) -> ObjectValue? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("DataView") {
+      match props_get(global_obj.props, "DataView") {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -203,7 +203,7 @@ fn dataview_proto_for_env(env : Env) -> ObjectValue? {
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -223,7 +223,7 @@ fn dataview_proto_for_env(env : Env) -> ObjectValue? {
 fn typed_array_ctor_for_env(env : Env) -> Value? {
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get("TypedArray") {
+      match props_get(global_obj.props, "TypedArray") {
         Some(prop) => Some(prop.value)
         None => None
       }
@@ -239,11 +239,11 @@ fn typed_array_proto_for_kind_env(
   let name = typed_array_constructor_name(kind)
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get(name) {
+      match props_get(global_obj.props, name) {
         Some(prop) =>
           match prop.value {
             Builtin(builtin) =>
-              match builtin.props.get("prototype") {
+              match props_get(builtin.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -252,7 +252,7 @@ fn typed_array_proto_for_kind_env(
                 None => None
               }
             Function(func) =>
-              match func.props.get("prototype") {
+              match props_get(func.props, "prototype") {
                 Some(proto_prop) =>
                   match proto_prop.value {
                     Object(proto_obj) => Some(proto_obj)
@@ -273,7 +273,7 @@ fn typed_array_ctor_for_kind_env(env : Env, kind : TypedArrayKind) -> Value? {
   let name = typed_array_constructor_name(kind)
   match global_object(env) {
     Some(global_obj) =>
-      match global_obj.props.get(name) {
+      match props_get(global_obj.props, name) {
         Some(prop) => Some(prop.value)
         None => None
       }

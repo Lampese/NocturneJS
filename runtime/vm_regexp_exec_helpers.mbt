@@ -134,7 +134,7 @@ fn build_regexp_groups(
           Some(Some(text)) => String(text)
           _ => Undefined
         }
-        if !(value is Undefined) || !groups_obj.props.contains(name) {
+        if !(value is Undefined) || !props_contains(groups_obj.props, name) {
           props_set(groups_obj.props, name, property_data(value))
         }
       }
@@ -185,7 +185,7 @@ fn build_regexp_indices(
     }
     match (groups_obj, capture_names.get(i)) {
       (Some(obj), Some(Some(name))) =>
-        if !(val is Undefined) || !obj.props.contains(name) {
+        if !(val is Undefined) || !props_contains(obj.props, name) {
           props_set(obj.props, name, property_data(val))
         }
       _ => ()

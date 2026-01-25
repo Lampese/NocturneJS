@@ -14,7 +14,7 @@ fn module_namespace_define_property(
   desc_info : PropertyDescInfo,
   throw_flag : Bool,
 ) -> Bool raise {
-  match obj.props.get(name) {
+  match props_get(obj.props, name) {
     None => {
       if throw_flag {
         let _ = throw_type_error("cannot define property")
@@ -218,7 +218,7 @@ fn define_property_value(
             Some(index) =>
               if index >= 0 &&
                 index < value.length() &&
-                !obj.props.contains(name) {
+                !props_contains(obj.props, name) {
                 props_set(obj.props, name, Property::{
                   value: String(
                     value.unsafe_substring(start=index, end=index + 1),
@@ -431,7 +431,7 @@ fn arguments_define_property(
   match parse_array_index(name) {
     Some(index) =>
       if index >= 0 && index < args.elements.length() {
-        if !args.props.contains(name) {
+        if !props_contains(args.props, name) {
           let current = arguments_index_value(args, index)
           props_set(args.props, name, property_data(current))
         }
@@ -445,7 +445,7 @@ fn arguments_define_property(
           !desc_info.has_value &&
           !(desc_info.has_get || desc_info.has_set) {
           let current = arguments_index_value(args, index)
-          match args.props.get(name) {
+          match props_get(args.props, name) {
             Some(prop) =>
               if prop.getter is None && prop.setter is None {
                 props_set(args.props, name, Property::{
@@ -547,7 +547,7 @@ fn define_array_property(
       return
     }
     let mut current_writable = true
-    match arr.props.get("length") {
+    match props_get(arr.props, "length") {
       Some(prop) => current_writable = prop.writable
       None => ()
     }
@@ -597,7 +597,7 @@ fn define_array_property(
     Some(index64) => {
       if index64 >= 0L {
         let current_len = array_length_from_props(arr)
-        match arr.props.get("length") {
+        match props_get(arr.props, "length") {
           Some(prop) =>
             if !prop.writable && index64 >= current_len {
               let _ = throw_type_error("cannot define property")
@@ -626,7 +626,7 @@ fn define_array_property(
         set_length_prop(arr.props, Number(Int64::to_double(new_len)))
       }
       if arr.typed_array_data is None &&
-        !arr.props.contains(name) &&
+        !props_contains(arr.props, name) &&
         index64 >= 0L &&
         index64 < Int64::from_int(arr.elements.length()) {
         let index = Int64::to_int(index64)
@@ -643,7 +643,7 @@ fn define_array_property(
 
 ///|
 fn define_property_in(
-  props : Map[String, Property],
+  props : Props,
   name : String,
   desc_info : PropertyDescInfo,
 ) -> Unit {
@@ -657,7 +657,7 @@ fn define_property_in(
   let mut has_writable = false
   let mut has_get = false
   let mut has_set = false
-  match props.get(name) {
+  match props_get(props, name) {
     Some(existing) => {
       value = existing.value
       writable = existing.writable

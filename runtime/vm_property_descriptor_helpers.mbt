@@ -291,12 +291,12 @@ fn property_accessor_non_config(getter : Value, setter : Value) -> Property {
 
 ///|
 fn set_accessor_property(
-  props : Map[String, Property],
+  props : Props,
   name : String,
   getter : Value?,
   setter : Value?,
 ) -> Unit {
-  match props.get(name) {
+  match props_get(props, name) {
     Some(prop) =>
       if prop.getter is Some(_) || prop.setter is Some(_) {
         let next_getter = match getter {
@@ -339,13 +339,13 @@ fn set_accessor_property(
 
 ///|
 fn set_accessor_property_with_enum(
-  props : Map[String, Property],
+  props : Props,
   name : String,
   getter : Value?,
   setter : Value?,
   enumerable : Bool,
 ) -> Unit {
-  match props.get(name) {
+  match props_get(props, name) {
     Some(prop) =>
       if prop.getter is Some(_) || prop.setter is Some(_) {
         let next_getter = match getter {

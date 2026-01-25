@@ -25,10 +25,10 @@ fn is_live_value_now(value : Value) -> Bool {
 
 ///|
 fn gc_visit_props(
-  props : Map[String, Property],
+  props : Props,
   visit_value : (Value) -> Unit,
 ) -> Unit {
-  for key, prop in props {
+  props_iter(props, fn(key, prop) {
     if is_symbol_prop_key(key) {
       match symbol_from_prop_key(key) {
         Some(symbol) => visit_value(Symbol(symbol))
@@ -44,7 +44,7 @@ fn gc_visit_props(
       Some(setter) => visit_value(setter)
       None => ()
     }
-  }
+  })
 }
 
 ///|

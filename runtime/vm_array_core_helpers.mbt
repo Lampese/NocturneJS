@@ -273,7 +273,7 @@ fn array_join(arr : ArrayValue, sep : String) -> String {
   for i = 0; i < len; i = i + 1 {
     let name = Int::to_string(i)
     let mut value_opt : Value? = None
-    match arr.props.get(name) {
+    match props_get(arr.props, name) {
       Some(prop) => value_opt = Some(prop.value)
       None => ()
     }

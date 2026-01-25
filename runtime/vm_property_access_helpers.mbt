@@ -1,6 +1,6 @@
 ///|
 fn property_get_from_props(
-  props : Map[String, Property],
+  props : Props,
   name : String,
   receiver : Value,
 ) -> Value? raise {
@@ -12,11 +12,11 @@ fn property_get_from_props(
 
 ///|
 fn property_get_from_props_raw(
-  props : Map[String, Property],
+  props : Props,
   name : String,
   receiver : Value,
 ) -> Value? raise {
-  match props.get(name) {
+  match props_get(props, name) {
     Some(prop) =>
       Some(
         match prop.getter {
@@ -34,7 +34,7 @@ fn property_get_from_props_raw(
 
 ///|
 fn property_get_from_chain(
-  props : Map[String, Property],
+  props : Props,
   proto : Value?,
   name : String,
   receiver : Value,
@@ -51,7 +51,7 @@ fn property_get_from_chain(
 
 ///|
 fn property_get_from_chain_raw(
-  props : Map[String, Property],
+  props : Props,
   proto : Value?,
   name : String,
   receiver : Value,
@@ -227,7 +227,7 @@ fn property_set(
         }
       }
     Function(func) => {
-      if name == "prototype" && !func.props.contains(name) {
+      if name == "prototype" && !props_contains(func.props, name) {
         ensure_function_prototype(func)
       }
       set_property_with_proto(
