@@ -428,28 +428,38 @@ fn iterator_constructor_setter(
   this_value : Value?,
   value : Value,
 ) -> Value raise {
-  let target = match this_value {
-    Some(value) => to_object(value)
-    None => {
-      let _ = throw_type_error("not an object")
-      return Undefined
-    }
+  let raw = match this_value {
+    Some(value) => value
+    None => Undefined
   }
-  if !is_object_like(value) {
-    return throw_type_error("not an object")
+  if !is_object_like(raw) {
+    let _ = throw_type_error("not an object")
+    return Undefined
   }
-  let desc = new_object_value()
+  let target = to_object(raw)
+  match iterator_proto() {
+    Some(proto) =>
+      match target {
+        Object(obj) =>
+          if obj.id == proto.id {
+            let _ = throw_type_error("invalid receiver")
+            return Undefined
+          }
+        _ => ()
+      }
+    None => ()
+  }
+  let desc = get_own_property_descriptor(target, "constructor")
   match desc {
-    Object(obj) => {
-      props_set(obj.props, "value", property_data(value))
-      props_set(obj.props, "writable", property_data(Bool(true)))
-      props_set(obj.props, "enumerable", property_data(Bool(false)))
-      props_set(obj.props, "configurable", property_data(Bool(true)))
+    Undefined => {
+      let _ = create_data_property_or_throw(target, "constructor", value)
+      Undefined
     }
-    _ => ()
+    _ => {
+      let _ = property_set(target, "constructor", value, true)
+      Undefined
+    }
   }
-  let _ = define_property_value(target, String("constructor"), desc, true)
-  value
 }
 
 ///|

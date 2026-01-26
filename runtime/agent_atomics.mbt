@@ -57,6 +57,9 @@ let current_agent_id_ref : Ref[Int?] = Ref::new(None)
 let agent_clock_ref : Ref[Int64] = Ref::new(0)
 
 ///|
+let agent_local_clock_ref : Ref[Map[Int, Int64]] = Ref::new(Map::new())
+
+///|
 let atomics_waiter_table_ref : Ref[Map[Int, AtomicsWaiter]] = Ref::new(
   Map::new(),
 )
@@ -614,4 +617,56 @@ fn agent_clock_advance(delta_ms : Int64) -> Int64 {
   })
   atomics_update_waiter_timeouts(value)
   value
+}
+
+///|
+fn agent_local_clock_now(agent_id : Int) -> Int64 {
+  let mut value : Int64? = None
+  agent_local_clock_ref.update(fn(table) {
+    value = table.get(agent_id)
+    table
+  })
+  match value {
+    Some(current) => current
+    None => {
+      let now = agent_clock_now()
+      agent_local_clock_ref.update(fn(table) {
+        table.set(agent_id, now)
+        table
+      })
+      now
+    }
+  }
+}
+
+///|
+fn agent_local_clock_advance(agent_id : Int, delta_ms : Int64) -> Int64 {
+  let mut next_value : Int64 = 0
+  agent_local_clock_ref.update(fn(table) {
+    let current = match table.get(agent_id) {
+      Some(value) => value
+      None => agent_clock_now()
+    }
+    let next = current + delta_ms
+    table.set(agent_id, next)
+    next_value = next
+    table
+  })
+  next_value
+}
+
+///|
+fn agent_local_clock_advance_to(agent_id : Int, target : Int64) -> Int64 {
+  let mut next_value : Int64 = 0
+  agent_local_clock_ref.update(fn(table) {
+    let current = match table.get(agent_id) {
+      Some(value) => value
+      None => agent_clock_now()
+    }
+    let next = if target > current { target } else { current }
+    table.set(agent_id, next)
+    next_value = next
+    table
+  })
+  next_value
 }

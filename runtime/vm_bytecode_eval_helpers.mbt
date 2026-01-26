@@ -81,7 +81,10 @@ fn bytecode_get_prop_cached_props(
         })
       return Some(value)
     }
-    None => ()
+    None =>
+      if props_contains(props, name) {
+        return None
+      }
   }
   match proto {
     Some(Object(proto_obj)) =>

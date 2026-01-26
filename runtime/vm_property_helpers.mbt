@@ -17,6 +17,19 @@ fn has_own_property(value : Value, name : String) -> Bool raise {
           }
         }
         None => {
+          if obj.is_module_namespace {
+            let desc = get_own_property_descriptor(value, name)
+            match desc {
+              Undefined => false
+              _ =>
+                if !is_object_like(desc) {
+                  let _ = throw_type_error("invalid property descriptor")
+                  false
+                } else {
+                  true
+                }
+            }
+          } else {
           if props_contains(obj.props, name) {
             return true
           }
@@ -31,6 +44,7 @@ fn has_own_property(value : Value, name : String) -> Bool raise {
                 }
               }
             None => false
+          }
           }
         }
       }
@@ -90,6 +104,19 @@ fn own_property_is_enumerable(value : Value, name : String) -> Bool raise {
           }
         }
         None => {
+          if obj.is_module_namespace {
+            let desc = get_own_property_descriptor(value, name)
+            match desc {
+              Undefined => false
+              _ =>
+                if !is_object_like(desc) {
+                  let _ = throw_type_error("invalid property descriptor")
+                  false
+                } else {
+                  is_truthy(property_get(desc, "enumerable"))
+                }
+            }
+          } else {
           match props_get(obj.props, name) {
             Some(prop) => return prop.enumerable
             None => ()
@@ -105,6 +132,7 @@ fn own_property_is_enumerable(value : Value, name : String) -> Bool raise {
                 }
               }
             None => false
+          }
           }
         }
       }

@@ -251,6 +251,7 @@ pub fn reset_runtime_state() -> Unit {
   next_agent_id_ref.update(fn(_) { 1 })
   current_agent_id_ref.update(fn(_) { None })
   agent_clock_ref.update(fn(_) { 0 })
+  agent_local_clock_ref.update(fn(_) { Map::new() })
   can_block_ref().update(fn(_) { true })
   atomics_waiter_table_ref.update(fn(_) { Map::new() })
   atomics_waiter_list_ref.update(fn(_) { [] })

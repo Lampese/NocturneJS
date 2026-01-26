@@ -87,11 +87,11 @@ fn reverse_regex_node(node : RegexNode, unicode : Bool) -> RegexNode {
     AlternationCached(branches, clear_indices) => {
       let reversed : Array[RegexNode] = []
       let reversed_clear : Array[Array[Int]] = []
-      let mut i = branches.length()
-      while i > 0 {
-        i = i - 1
+      let mut i = 0
+      while i < branches.length() {
         reversed.push(reverse_regex_node(branches[i], unicode))
         reversed_clear.push(clear_indices[i])
+        i = i + 1
       }
       AlternationCached(reversed, reversed_clear)
     }

@@ -598,6 +598,9 @@ fn atomics_wait_value(args : Array[Value]) -> Value raise {
       }
       let now = agent_clock_now()
       let deadline = if infinite { None } else { Some(now + timeout_ms) }
+      if !infinite {
+        let _ = agent_local_clock_advance_to(agent_id, now + timeout_ms)
+      }
       let waiter_id = atomics_next_waiter_id()
       let waiter = AtomicsWaiter::{
         id: waiter_id,

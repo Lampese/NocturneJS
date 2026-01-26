@@ -157,11 +157,22 @@ fn call_builtin_test262(
       } else {
         to_int32(to_number(args[0]))
       }
-      let _ = agent_clock_advance(Int64::from_int(duration))
+      let delta = Int64::from_int(duration)
+      let _ = agent_clock_advance(delta)
+      match current_agent_id() {
+        Some(agent_id) => {
+          let _ = agent_local_clock_advance(agent_id, delta)
+        }
+        None => ()
+      }
       Undefined
     }
     BuiltinFunction::Test262AgentMonotonicNow =>
-      Number(agent_clock_now().to_double())
+      match current_agent_id() {
+        Some(agent_id) =>
+          Number(agent_local_clock_now(agent_id).to_double())
+        None => Number(agent_clock_now().to_double())
+      }
     _ => throw_type_error("invalid builtin")
   }
 }
