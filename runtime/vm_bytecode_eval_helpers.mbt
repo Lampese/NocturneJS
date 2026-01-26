@@ -32,6 +32,86 @@ const PROP_CACHE_OWN : Int = 0
 const PROP_CACHE_PROTO : Int = 1
 
 ///|
+fn bytecode_get_prop_cached_props(
+  cache : Array[PropCacheEntry?],
+  cache_index : Int,
+  props : Props,
+  proto : Value?,
+  name : String,
+) -> Value? raise {
+  let shape_id = match props_shape_id(props) {
+    Some(value) => value
+    None => return None
+  }
+  let version = props_version(props)
+  match cache[cache_index] {
+    Some(entry) =>
+      if entry.shape_id == shape_id && entry.version == version {
+        if entry.kind == PROP_CACHE_OWN {
+          match props_get_data_slot_value(props, entry.index) {
+            Some(value) => return Some(value)
+            None => ()
+          }
+        } else if entry.kind == PROP_CACHE_PROTO {
+          match proto {
+            Some(Object(proto_obj)) =>
+              if proto_obj.id == entry.proto_id &&
+                props_version(proto_obj.props) == entry.proto_version {
+                match props_get_data_slot_value(proto_obj.props, entry.index) {
+                  Some(value) => return Some(value)
+                  None => ()
+                }
+              }
+            _ => ()
+          }
+        }
+      }
+    None => ()
+  }
+  match props_get_data_slot(props, name) {
+    Some((index, _, value)) => {
+      cache[cache_index] =
+        Some(PropCacheEntry::{
+          kind: PROP_CACHE_OWN,
+          shape_id,
+          version,
+          index,
+          proto_id: -1,
+          proto_version: 0,
+        })
+      return Some(value)
+    }
+    None => ()
+  }
+  match proto {
+    Some(Object(proto_obj)) =>
+      if proto_obj.proxy_data is None &&
+        proto_obj.string_data is None &&
+        !proto_obj.is_module_namespace {
+        let proto_props = proto_obj.props
+        let proto_version = props_version(proto_props)
+        match props_get_data_slot(proto_props, name) {
+          Some((index, _, value)) => {
+            cache[cache_index] =
+              Some(PropCacheEntry::{
+                kind: PROP_CACHE_PROTO,
+                shape_id,
+                version,
+                index,
+                proto_id: proto_obj.id,
+                proto_version,
+              })
+            return Some(value)
+          }
+          None => ()
+        }
+      }
+    _ => ()
+  }
+  None
+}
+
+///|
 fn bytecode_fast_get_prop(target : Value, name : String) -> Value? raise {
   match target {
     Object(obj) =>
@@ -63,77 +143,43 @@ fn bytecode_get_prop_cached(
       if obj.proxy_data is None &&
         obj.string_data is None &&
         !obj.is_module_namespace {
-        let props = obj.props
-        let shape_id = match props_shape_id(props) {
-          Some(value) => value
-          None => return None
-        }
-        let version = props_version(props)
-        match cache[cache_index] {
-          Some(entry) =>
-            if entry.shape_id == shape_id && entry.version == version {
-              if entry.kind == PROP_CACHE_OWN {
-                match props_get_data_slot_value(props, entry.index) {
-                  Some(value) => return Some(value)
-                  None => ()
-                }
-              } else if entry.kind == PROP_CACHE_PROTO {
-                match obj.proto {
-                  Some(Object(proto_obj)) =>
-                    if proto_obj.id == entry.proto_id &&
-                      props_version(proto_obj.props) == entry.proto_version {
-                      match props_get_data_slot_value(proto_obj.props, entry.index) {
-                        Some(value) => return Some(value)
-                        None => ()
-                      }
-                    }
-                  _ => ()
-                }
-              }
-            }
-          None => ()
-        }
-        match props_get_data_slot(props, name) {
-          Some((index, _, value)) => {
-            cache[cache_index] =
-              Some(PropCacheEntry::{
-                kind: PROP_CACHE_OWN,
-                shape_id,
-                version,
-                index,
-                proto_id: -1,
-                proto_version: 0,
-              })
-            return Some(value)
-          }
-          None => ()
-        }
-        match obj.proto {
-          Some(Object(proto_obj)) =>
-            if proto_obj.proxy_data is None &&
-              proto_obj.string_data is None &&
-              !proto_obj.is_module_namespace {
-              let proto_props = proto_obj.props
-              let proto_version = props_version(proto_props)
-              match props_get_data_slot(proto_props, name) {
-                Some((index, _, value)) => {
-                  cache[cache_index] =
-                    Some(PropCacheEntry::{
-                      kind: PROP_CACHE_PROTO,
-                      shape_id,
-                      version,
-                      index,
-                      proto_id: proto_obj.id,
-                      proto_version,
-                    })
-                  return Some(value)
-                }
-                None => ()
-              }
-            }
-          _ => ()
-        }
+        return bytecode_get_prop_cached_props(
+          cache,
+          cache_index,
+          obj.props,
+          obj.proto,
+          name,
+        )
       }
+    Array(arr) => {
+      if arr.typed_array_data is Some(_) {
+        return None
+      }
+      match array_index_from_name(name) {
+        Some(_) => return None
+        None => ()
+      }
+      return bytecode_get_prop_cached_props(
+        cache,
+        cache_index,
+        arr.props,
+        arr.proto,
+        name,
+      )
+    }
+    Arguments(args) => {
+      match array_index_from_name(name) {
+        Some(_) => return None
+        None => ()
+      }
+      return bytecode_get_prop_cached_props(
+        cache,
+        cache_index,
+        args.props,
+        args.proto,
+        name,
+      )
+    }
     _ => ()
   }
   None
@@ -768,7 +814,7 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
       let result = try {
       while pc < code.length() {
         gc_tick = gc_tick + 1
-        if Int::land(gc_tick, 255) == 0 {
+        if Int::land(gc_tick, 1023) == 0 && gc_is_pending() {
           gc_maybe_collect()
         }
         let instr = code[pc]
@@ -818,7 +864,16 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
                       let mut name : String? = None
                       let mut fast_value : Value? = None
                       match arr.typed_array_data {
-                        Some(_) => ()
+                        Some(data) => {
+                          let len = typed_array_effective_length(data)
+                          if index < Int64::from_int(len) {
+                            let elem_index = Int64::to_int(index)
+                            fast_value =
+                              Some(typed_array_get_index(data, elem_index))
+                          } else {
+                            fast_value = Some(Undefined)
+                          }
+                        }
                         None => {
                           let elements_len = Int64::from_int(arr.elements.length())
                           if index < elements_len {
@@ -885,7 +940,16 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
                       let name = Int64::to_string(index)
                       let mut fast_value : Value? = None
                       match arr.typed_array_data {
-                        Some(_) => ()
+                        Some(data) => {
+                          let len = typed_array_effective_length(data)
+                          if index < Int64::from_int(len) {
+                            let elem_index = Int64::to_int(index)
+                            fast_value =
+                              Some(typed_array_get_index(data, elem_index))
+                          } else {
+                            fast_value = Some(Undefined)
+                          }
+                        }
                         None =>
                           if props_has_only_length(arr.props) ||
                             !props_contains(arr.props, name) {
@@ -3041,7 +3105,7 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
   let result = try {
     while pc < code.length() || resume_throw is Some(_) || resume_return is Some(_) {
       gc_tick = gc_tick + 1
-      if Int::land(gc_tick, 255) == 0 {
+      if Int::land(gc_tick, 1023) == 0 && gc_is_pending() {
         gc_maybe_collect()
       }
       match resume_return {
@@ -3140,7 +3204,16 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
                         let mut name : String? = None
                         let mut fast_value : Value? = None
                         match arr.typed_array_data {
-                          Some(_) => ()
+                          Some(data) => {
+                            let len = typed_array_effective_length(data)
+                            if index < Int64::from_int(len) {
+                              let elem_index = Int64::to_int(index)
+                              fast_value =
+                                Some(typed_array_get_index(data, elem_index))
+                            } else {
+                              fast_value = Some(Undefined)
+                            }
+                          }
                           None => {
                             let elements_len = Int64::from_int(arr.elements.length())
                             if index < elements_len {
@@ -3209,7 +3282,16 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
                         let name = Int64::to_string(index)
                         let mut fast_value : Value? = None
                         match arr.typed_array_data {
-                          Some(_) => ()
+                          Some(data) => {
+                            let len = typed_array_effective_length(data)
+                            if index < Int64::from_int(len) {
+                              let elem_index = Int64::to_int(index)
+                              fast_value =
+                                Some(typed_array_get_index(data, elem_index))
+                            } else {
+                              fast_value = Some(Undefined)
+                            }
+                          }
                           None =>
                             if props_has_only_length(arr.props) ||
                               !props_contains(arr.props, name) {

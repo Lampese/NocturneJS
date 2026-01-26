@@ -8,21 +8,35 @@ fn hex_digit_upper(value : Int) -> Int {
 }
 
 ///|
+fn init_uri_hex_table() -> Array[Int] {
+  let table = Array::make(256, -1)
+  let mut i = 0
+  while i < 10 {
+    table[48 + i] = i
+    i = i + 1
+  }
+  i = 0
+  while i < 6 {
+    table[65 + i] = 10 + i
+    table[97 + i] = 10 + i
+    i = i + 1
+  }
+  table
+}
+
+let uri_hex_table : Array[Int] = init_uri_hex_table()
+
+///|
 fn uri_hex_value(code : Int) -> Int? {
-  let zero = Char::to_int('0')
-  let nine = Char::to_int('9')
-  let upper_a = Char::to_int('A')
-  let upper_f = Char::to_int('F')
-  let lower_a = Char::to_int('a')
-  let lower_f = Char::to_int('f')
-  if code >= zero && code <= nine {
-    Some(code - zero)
-  } else if code >= upper_a && code <= upper_f {
-    Some(code - upper_a + 10)
-  } else if code >= lower_a && code <= lower_f {
-    Some(code - lower_a + 10)
-  } else {
+  if code < 0 || code >= 256 {
     None
+  } else {
+    let value = uri_hex_table[code]
+    if value < 0 {
+      None
+    } else {
+      Some(value)
+    }
   }
 }
 
@@ -133,6 +147,28 @@ fn append_code_point_units(units : Array[Int], code_point : Int) -> Unit {
 }
 
 ///|
+fn push_code_unit_bytes(bytes : Array[Byte], unit : Int) -> Unit {
+  let value = unit & 0xffff
+  let low = Int::to_byte(value & 0xff)
+  let high = Int::to_byte((value >> 8) & 0xff)
+  bytes.push(low)
+  bytes.push(high)
+}
+
+///|
+fn append_code_point_bytes(bytes : Array[Byte], code_point : Int) -> Unit {
+  if code_point <= 0xffff {
+    push_code_unit_bytes(bytes, code_point)
+  } else {
+    let cp = code_point - 0x10000
+    let high = 0xD800 + (cp >> 10)
+    let low = 0xDC00 + (cp & 0x3ff)
+    push_code_unit_bytes(bytes, high)
+    push_code_unit_bytes(bytes, low)
+  }
+}
+
+///|
 fn uri_hex_decode(text : String, index : Int) -> Int raise {
   let len = text.length()
   let percent = Char::to_int('%')
@@ -146,33 +182,115 @@ fn uri_hex_decode(text : String, index : Int) -> Int raise {
   }
   let hi = UInt16::to_int(text.code_unit_at(index + 1))
   let lo = UInt16::to_int(text.code_unit_at(index + 2))
-  let high = match uri_hex_value(hi) {
-    Some(value) => value
-    None => {
-      let _ = throw_uri_error("expecting hex digit")
-      return 0
-    }
+  let high = if hi >= 0 && hi < 256 { uri_hex_table[hi] } else { -1 }
+  if high < 0 {
+    let _ = throw_uri_error("expecting hex digit")
+    return 0
   }
-  let low = match uri_hex_value(lo) {
-    Some(value) => value
-    None => {
-      let _ = throw_uri_error("expecting hex digit")
-      return 0
-    }
+  let low = if lo >= 0 && lo < 256 { uri_hex_table[lo] } else { -1 }
+  if low < 0 {
+    let _ = throw_uri_error("expecting hex digit")
+    return 0
   }
   (high << 4) | low
 }
 
 ///|
+fn uri_hex_digit_at(text : String, index : Int) -> Int? {
+  let len = text.length()
+  if index < 0 || index >= len {
+    return None
+  }
+  let unit = UInt16::to_int(text.code_unit_at(index))
+  if unit < 0 || unit >= 256 {
+    return None
+  }
+  let value = uri_hex_table[unit]
+  if value < 0 {
+    None
+  } else {
+    Some(value)
+  }
+}
+
+///|
+fn uri_decode_fast_4byte_component(text : String) -> String? {
+  if text.length() != 12 {
+    return None
+  }
+  let percent = Char::to_int('%')
+  if UInt16::to_int(text.code_unit_at(0)) != percent ||
+    UInt16::to_int(text.code_unit_at(3)) != percent ||
+    UInt16::to_int(text.code_unit_at(6)) != percent ||
+    UInt16::to_int(text.code_unit_at(9)) != percent {
+    return None
+  }
+  let h0 = uri_hex_digit_at(text, 1)
+  let h1 = uri_hex_digit_at(text, 2)
+  let h2 = uri_hex_digit_at(text, 4)
+  let h3 = uri_hex_digit_at(text, 5)
+  let h4 = uri_hex_digit_at(text, 7)
+  let h5 = uri_hex_digit_at(text, 8)
+  let h6 = uri_hex_digit_at(text, 10)
+  let h7 = uri_hex_digit_at(text, 11)
+  match (h0, h1, h2, h3, h4, h5, h6, h7) {
+    (
+      Some(a0),
+      Some(a1),
+      Some(b0),
+      Some(b1n),
+      Some(c0),
+      Some(c1),
+      Some(d0),
+      Some(d1),
+    ) => {
+      let byte1 = (a0 << 4) | a1
+      let byte2 = (b0 << 4) | b1n
+      let byte3 = (c0 << 4) | c1
+      let byte4 = (d0 << 4) | d1
+      if byte1 < 0xF0 || byte1 > 0xF4 {
+        return None
+      }
+      if byte2 < 0x80 || byte2 > 0xBF || byte3 < 0x80 || byte3 > 0xBF ||
+        byte4 < 0x80 || byte4 > 0xBF {
+        return None
+      }
+      if (byte1 == 0xF0 && byte2 < 0xA0) || (byte1 == 0xF4 && byte2 > 0x8F) {
+        return None
+      }
+      let code = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) |
+        ((byte3 & 0x3F) << 6) | (byte4 & 0x3F)
+      let cp = code - 0x10000
+      let high = 0xD800 + (cp >> 10)
+      let low = 0xDC00 + (cp & 0x3FF)
+      let bytes : Array[Byte] = Array::make(4, Int::to_byte(0))
+      bytes[0] = Int::to_byte(high & 0xff)
+      bytes[1] = Int::to_byte((high >> 8) & 0xff)
+      bytes[2] = Int::to_byte(low & 0xff)
+      bytes[3] = Int::to_byte((low >> 8) & 0xff)
+      let data = Bytes::from_array(bytes)
+      Some(data.to_unchecked_string())
+    }
+    _ => None
+  }
+}
+
+///|
 fn uri_decode(text : String, is_component : Bool) -> String raise {
+  if is_component {
+    match uri_decode_fast_4byte_component(text) {
+      Some(value) => return value
+      None => ()
+    }
+  }
   let len = text.length()
   let mut index = 0
-  let units : Array[Int] = []
+  let bytes : Array[Byte] = []
   let percent = Char::to_int('%')
   while index < len {
     let unit = UInt16::to_int(text.code_unit_at(index))
     if unit != percent {
-      units.push(unit)
+      push_code_unit_bytes(bytes, unit)
       index = index + 1
       continue
     }
@@ -180,11 +298,11 @@ fn uri_decode(text : String, is_component : Bool) -> String raise {
     index = index + 3
     if byte < 0x80 {
       if !is_component && is_uri_reserved(byte) {
-        units.push(percent)
-        units.push(UInt16::to_int(text.code_unit_at(index - 2)))
-        units.push(UInt16::to_int(text.code_unit_at(index - 1)))
+        push_code_unit_bytes(bytes, percent)
+        push_code_unit_bytes(bytes, UInt16::to_int(text.code_unit_at(index - 2)))
+        push_code_unit_bytes(bytes, UInt16::to_int(text.code_unit_at(index - 1)))
       } else {
-        units.push(byte)
+        push_code_unit_bytes(bytes, byte)
       }
       continue
     }
@@ -223,9 +341,10 @@ fn uri_decode(text : String, is_component : Bool) -> String raise {
       let _ = throw_uri_error("malformed UTF-8")
       return ""
     }
-    append_code_point_units(units, code)
+    append_code_point_bytes(bytes, code)
   }
-  string_from_code_units(units)
+  let data = Bytes::from_array(bytes)
+  data.to_unchecked_string()
 }
 
 ///|

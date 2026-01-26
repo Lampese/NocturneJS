@@ -21,10 +21,7 @@ fn call_builtin_regexp(
         None => Undefined
       }
       let input = if args.is_empty() { Undefined } else { args[0] }
-      match regexp_exec_method(this_value, input) {
-        Null => Bool(false)
-        _ => Bool(true)
-      }
+      Bool(regexp_test_method(this_value, input))
     }
     BuiltinFunction::RegExpToString =>
       regexp_to_string_value(builtin.this_value)

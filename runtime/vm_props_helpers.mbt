@@ -11,13 +11,20 @@ priv struct Shape {
   id : Int
   entries : Array[ShapeEntry]
   entry_map : Map[String, Int]
-  transitions : Map[String, Shape]
+  transitions : Map[String, ShapeTransitions]
 }
 
 ///|
 priv enum PropSlot {
   Data(Value)
   Accessor(Value, Value)
+}
+
+///|
+priv struct ShapeTransitions {
+  add : Array[Shape?]
+  update : Array[Shape?]
+  remove : Array[Shape?]
 }
 
 ///|
@@ -117,8 +124,27 @@ fn prop_attr_bits(writable : Bool, enumerable : Bool, configurable : Bool) -> In
 }
 
 ///|
-fn shape_transition_key(kind : String, name : String, bits : Int) -> String {
-  kind + "|" + name + "|" + Int::to_string(bits)
+fn shape_transitions_new() -> ShapeTransitions {
+  ShapeTransitions::{
+    add: Array::make(8, None),
+    update: Array::make(8, None),
+    remove: Array::make(1, None),
+  }
+}
+
+///|
+fn shape_transitions_for_name(
+  shape : Shape,
+  name : String,
+) -> ShapeTransitions {
+  match shape.transitions.get(name) {
+    Some(value) => value
+    None => {
+      let fresh = shape_transitions_new()
+      shape.transitions.set(name, fresh)
+      fresh
+    }
+  }
 }
 
 ///|
@@ -130,14 +156,14 @@ fn shape_transition_add(
   configurable : Bool,
 ) -> Shape {
   let bits = prop_attr_bits(writable, enumerable, configurable)
-  let key = shape_transition_key("A", name, bits)
-  match shape.transitions.get(key) {
+  let transitions = shape_transitions_for_name(shape, name)
+  match transitions.add[bits] {
     Some(next) => next
     None => {
       let entries = clone_shape_entries(shape.entries)
       entries.push(ShapeEntry::{ name, writable, enumerable, configurable })
       let next = shape_new(entries)
-      shape.transitions.set(key, next)
+      transitions.add[bits] = Some(next)
       next
     }
   }
@@ -152,8 +178,8 @@ fn shape_transition_update(
   configurable : Bool,
 ) -> Shape {
   let bits = prop_attr_bits(writable, enumerable, configurable)
-  let key = shape_transition_key("U", name, bits)
-  match shape.transitions.get(key) {
+  let transitions = shape_transitions_for_name(shape, name)
+  match transitions.update[bits] {
     Some(next) => next
     None => {
       let entries = clone_shape_entries(shape.entries)
@@ -166,7 +192,7 @@ fn shape_transition_update(
         None => ()
       }
       let next = shape_new(entries)
-      shape.transitions.set(key, next)
+      transitions.update[bits] = Some(next)
       next
     }
   }
@@ -174,8 +200,8 @@ fn shape_transition_update(
 
 ///|
 fn shape_transition_remove(shape : Shape, name : String) -> Shape {
-  let key = shape_transition_key("R", name, 0)
-  match shape.transitions.get(key) {
+  let transitions = shape_transitions_for_name(shape, name)
+  match transitions.remove[0] {
     Some(next) => next
     None => {
       let entries : Array[ShapeEntry] = []
@@ -190,7 +216,7 @@ fn shape_transition_remove(shape : Shape, name : String) -> Shape {
         } else {
           shape_new(entries)
         }
-      shape.transitions.set(key, next)
+      transitions.remove[0] = Some(next)
       next
     }
   }

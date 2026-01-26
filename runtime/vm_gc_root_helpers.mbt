@@ -45,6 +45,16 @@ fn gc_request() -> Unit {
 }
 
 ///|
+fn gc_is_pending() -> Bool {
+  let mut pending = false
+  gc_pending_ref().update(fn(current) {
+    pending = current
+    current
+  })
+  pending
+}
+
+///|
 fn gc_root_depth() -> Int {
   let mut depth = 0
   gc_value_root_ref().update(fn(stack) {

@@ -28,6 +28,7 @@ priv enum RegexNode {
   Empty
   Sequence(Array[RegexNode])
   Alternation(Array[RegexNode])
+  AlternationCached(Array[RegexNode], Array[Array[Int]])
   Literal(Int)
   Dot
   CharClass(ClassSet)
@@ -396,8 +397,20 @@ fn class_set_has_empty_string(set : ClassSet) -> Bool {
 
 ///|
 fn class_set_contains_range(set : ClassSet, code : Int) -> Bool {
-  for r in set.ranges {
-    if code >= r.start && code <= r.end {
+  let ranges = set.ranges
+  if ranges.is_empty() {
+    return false
+  }
+  let mut low = 0
+  let mut high = ranges.length() - 1
+  while low <= high {
+    let mid = (low + high) / 2
+    let r = ranges[mid]
+    if code < r.start {
+      high = mid - 1
+    } else if code > r.end {
+      low = mid + 1
+    } else {
       return true
     }
   }

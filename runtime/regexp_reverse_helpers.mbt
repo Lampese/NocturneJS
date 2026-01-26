@@ -84,6 +84,17 @@ fn reverse_regex_node(node : RegexNode, unicode : Bool) -> RegexNode {
       }
       Alternation(reversed)
     }
+    AlternationCached(branches, clear_indices) => {
+      let reversed : Array[RegexNode] = []
+      let reversed_clear : Array[Array[Int]] = []
+      let mut i = branches.length()
+      while i > 0 {
+        i = i - 1
+        reversed.push(reverse_regex_node(branches[i], unicode))
+        reversed_clear.push(clear_indices[i])
+      }
+      AlternationCached(reversed, reversed_clear)
+    }
     Literal(code) => Literal(code)
     Dot => Dot
     CharClass(set) => CharClass(reverse_class_set_strings(set, unicode))

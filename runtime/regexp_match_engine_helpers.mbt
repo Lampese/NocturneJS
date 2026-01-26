@@ -77,6 +77,22 @@ fn match_node_with_policy(
   match node {
     Empty => [state]
     Sequence(nodes) => match_sequence(nodes, input, state, flags, capture_first)
+    AlternationCached(branches, clear_indices) => {
+      let results : Array[MatchState] = []
+      let mut i = 0
+      while i < branches.length() {
+        let branch = branches[i]
+        let clear = clear_indices[i]
+        for
+          next in match_node_with_policy(
+            branch, input, state, flags, capture_first,
+          ) {
+          results.push(clear_captures(next, clear))
+        }
+        i = i + 1
+      }
+      results
+    }
     Alternation(branches) => {
       let results : Array[MatchState] = []
       let all_indices : Array[Int] = []
@@ -120,13 +136,30 @@ fn match_node_with_policy(
           }
         None => []
       }
-    CharClass(set) => {
-      let results : Array[MatchState] = []
-      for next_index in match_class_set(set, input, state.index, flags) {
-        results.push(MatchState::{ index: next_index, captures: state.captures })
+    CharClass(set) =>
+      if set.strings.is_empty() {
+        match
+          read_codepoint(input, state.index, flags.unicode || flags.unicode_sets) {
+          Some((codepoint, next_index)) => {
+            let check = canonicalize_codepoint(codepoint, flags)
+            if class_set_contains_range(set, check) {
+              [MatchState::{ index: next_index, captures: state.captures }]
+            } else {
+              []
+            }
+          }
+          None => []
+        }
+      } else {
+        let results : Array[MatchState] = []
+        for next_index in match_class_set(set, input, state.index, flags) {
+          results.push(MatchState::{
+            index: next_index,
+            captures: state.captures,
+          })
+        }
+        results
       }
-      results
-    }
     Capture(index, inner) => {
       let results : Array[MatchState] = []
       let start = state.index
@@ -259,6 +292,26 @@ fn match_node_with_policy_iter(
     Empty => emit(state)
     Sequence(nodes) =>
       match_sequence_iter(nodes, 0, input, state, flags, capture_first, emit)
+    AlternationCached(branches, clear_indices) => {
+      let mut i = 0
+      while i < branches.length() {
+        let branch = branches[i]
+        let clear = clear_indices[i]
+        let stopped = match_node_with_policy_iter(
+          branch,
+          input,
+          state,
+          flags,
+          capture_first,
+          fn(next) { emit(clear_captures(next, clear)) },
+        )
+        if stopped {
+          return true
+        }
+        i = i + 1
+      }
+      false
+    }
     Alternation(branches) => {
       let all_indices : Array[Int] = []
       for branch in branches {
@@ -306,14 +359,48 @@ fn match_node_with_policy_iter(
           }
         None => false
       }
-    CharClass(set) => {
-      for next_index in match_class_set(set, input, state.index, flags) {
-        if emit(MatchState::{ index: next_index, captures: state.captures }) {
-          return true
+    CharClass(set) =>
+      if set.strings.is_empty() {
+        match
+          read_codepoint(input, state.index, flags.unicode || flags.unicode_sets) {
+          Some((codepoint, next_index)) => {
+            let check = canonicalize_codepoint(codepoint, flags)
+            if class_set_contains_range(set, check) {
+              emit(MatchState::{ index: next_index, captures: state.captures })
+            } else {
+              false
+            }
+          }
+          None => false
+        }
+      } else {
+        for text in set.strings {
+          match match_string_at(input, state.index, text, flags) {
+            Some(next_index) =>
+              if emit(MatchState::{
+                index: next_index,
+                captures: state.captures,
+              }) {
+                return true
+              }
+            None => ()
+          }
+        }
+        match
+          read_codepoint(input, state.index, flags.unicode || flags.unicode_sets) {
+          Some((codepoint, next_index)) => {
+            let check = canonicalize_codepoint(codepoint, flags)
+            if class_set_contains_range(set, check) {
+              return emit(MatchState::{
+                index: next_index,
+                captures: state.captures,
+              })
+            }
+            false
+          }
+          None => false
         }
       }
-      false
-    }
     Capture(index, inner) => {
       let start = state.index
       match_node_with_policy_iter(inner, input, state, flags, capture_first, fn(
@@ -879,6 +966,176 @@ fn is_simple_repeat_node(node : RegexNode) -> Bool {
 }
 
 ///|
+fn anchor_end_matches(input : String, index : Int, flags : RegexpFlags) -> Bool {
+  let len = input.length()
+  if index == len {
+    return true
+  }
+  if flags.multiline {
+    match read_codepoint(input, index, false) {
+      Some((curr, _)) => is_line_terminator(curr)
+      None => false
+    }
+  } else {
+    false
+  }
+}
+
+///|
+fn match_repeat_first_simple_anchor_end(
+  inner : RegexNode,
+  min : Int,
+  max : Int,
+  greedy : Bool,
+  input : String,
+  state : MatchState,
+  flags : RegexpFlags,
+) -> MatchState? {
+  if !flags.multiline {
+    match inner {
+      CharClass(set) =>
+        if set.strings.is_empty() && !flags.ignore_case &&
+          set.ranges.length() == 1 {
+          let r = set.ranges[0]
+          if r.start == 0 && r.end == 0x7f {
+            let len = input.length()
+            let mut index = state.index
+            if index < 0 || index > len {
+              return None
+            }
+            let ascii_limit : UInt16 = 0x7f
+            if max == -1 && min <= 1 {
+              if index == len && min > 0 {
+                return None
+              }
+              while index < len {
+                let unit = input.code_unit_at(index)
+                if unit > ascii_limit {
+                  return None
+                }
+                index = index + 1
+              }
+              return Some(MatchState::{ index: len, captures: state.captures })
+            } else {
+              let mut count = 0
+              while index < len {
+                let unit = input.code_unit_at(index)
+                if unit > ascii_limit {
+                  return None
+                }
+                index = index + 1
+                count = count + 1
+                if max != -1 && count > max {
+                  return None
+                }
+              }
+              if count >= min {
+                return Some(MatchState::{ index: len, captures: state.captures })
+              }
+              return None
+            }
+          } else if r.start == 0x80 && r.end == 0x10ffff {
+            let len = input.length()
+            let mut index = state.index
+            if index < 0 || index > len {
+              return None
+            }
+            let ascii_limit : UInt16 = 0x7f
+            let unicode = flags.unicode || flags.unicode_sets
+            if max == -1 && min <= 1 {
+              if index == len && min > 0 {
+                return None
+              }
+              while index < len {
+                let unit = input.code_unit_at(index)
+                if unit <= ascii_limit {
+                  return None
+                }
+                index = index + 1
+              }
+              return Some(MatchState::{ index: len, captures: state.captures })
+            } else {
+              let mut count = 0
+              while index < len {
+                let unit = input.code_unit_at(index)
+                if unit <= ascii_limit {
+                  return None
+                }
+                if unicode && unit.is_leading_surrogate() && index + 1 < len {
+                  let next = input.code_unit_at(index + 1)
+                  if next.is_trailing_surrogate() {
+                    index = index + 2
+                    count = count + 1
+                    if max != -1 && count > max {
+                      return None
+                    }
+                    continue
+                  }
+                }
+                index = index + 1
+                count = count + 1
+                if max != -1 && count > max {
+                  return None
+                }
+              }
+              if count >= min {
+                return Some(MatchState::{ index: len, captures: state.captures })
+              }
+              return None
+            }
+          }
+        }
+      _ => ()
+    }
+  }
+  if max == 0 {
+    if min == 0 && anchor_end_matches(input, state.index, flags) {
+      return Some(state)
+    }
+    return None
+  }
+  let mut current = state.index
+  let mut count = 0
+  let mut last_candidate : Int? = None
+  if min == 0 && anchor_end_matches(input, current, flags) {
+    if !greedy {
+      return Some(state)
+    }
+    last_candidate = Some(current)
+  }
+  while max == -1 || count < max {
+    match match_simple_repeat_next(inner, input, current, flags) {
+      Some(next_index) => {
+        if next_index == current {
+          break
+        }
+        current = next_index
+        count = count + 1
+        if count >= min && anchor_end_matches(input, current, flags) {
+          if !greedy {
+            return Some(MatchState::{
+              index: current,
+              captures: state.captures,
+            })
+          }
+          last_candidate = Some(current)
+        }
+      }
+      None => break
+    }
+  }
+  if greedy {
+    match last_candidate {
+      Some(index) =>
+        Some(MatchState::{ index, captures: state.captures })
+      None => None
+    }
+  } else {
+    None
+  }
+}
+
+///|
 fn match_repeat_first_simple(
   inner : RegexNode,
   min : Int,
@@ -891,6 +1148,15 @@ fn match_repeat_first_simple(
   flags : RegexpFlags,
   capture_first : Bool,
 ) -> MatchState? {
+  if next_index < nodes.length() && next_index + 1 == nodes.length() {
+    match nodes[next_index] {
+      AnchorEnd =>
+        return match_repeat_first_simple_anchor_end(
+          inner, min, max, greedy, input, state, flags,
+        )
+      _ => ()
+    }
+  }
   let positions : Array[Int] = [state.index]
   let mut count = 0
   let mut current = state.index
@@ -1025,6 +1291,41 @@ fn match_simple_repeat_next(
       if !set.strings.is_empty() {
         None
       } else {
+        if !flags.ignore_case {
+          let ranges = set.ranges
+          if ranges.length() == 1 {
+            let r = ranges[0]
+            if r.start == 0 && r.end == 0x7f {
+              let len = input.length()
+              if index < 0 || index >= len {
+                return None
+              }
+              let ascii_limit : UInt16 = 0x7f
+              let unit = input.code_unit_at(index)
+              return if unit <= ascii_limit { Some(index + 1) } else { None }
+            }
+            if r.start == 0x80 && r.end == 0x10ffff {
+              let len = input.length()
+              if index < 0 || index >= len {
+                return None
+              }
+              let ascii_limit : UInt16 = 0x7f
+              let unit = input.code_unit_at(index)
+              if unit <= ascii_limit {
+                return None
+              }
+              if flags.unicode || flags.unicode_sets {
+                if unit.is_leading_surrogate() && index + 1 < len {
+                  let next = input.code_unit_at(index + 1)
+                  if next.is_trailing_surrogate() {
+                    return Some(index + 2)
+                  }
+                }
+              }
+              return Some(index + 1)
+            }
+          }
+        }
         match
           read_codepoint(input, index, flags.unicode || flags.unicode_sets) {
           Some((codepoint, next_index)) => {
@@ -1426,6 +1727,46 @@ fn regexp_match_from_program(
           groups,
           indices,
         })
+      }
+      None => ()
+    }
+    if sticky {
+      return None
+    }
+    if index >= len {
+      return None
+    }
+    index = advance_string_index(
+      input,
+      index,
+      program.flags.unicode || program.flags.unicode_sets,
+    )
+  }
+  None
+}
+
+///|
+fn regexp_match_indices_from_program(
+  program : RegexpProgram,
+  input : String,
+  start : Int,
+  sticky : Bool,
+) -> (Int, Int, Array[CaptureSpan?])? {
+  let len = input.length()
+  if start > len {
+    return None
+  }
+  let mut index = start
+  while true {
+    let initial = MatchState::{
+      index,
+      captures: Array::make(program.capture_count, None),
+    }
+    match match_node_first(program.root, input, initial, program.flags) {
+      Some(chosen) => {
+        let start_index = index
+        let end_index = chosen.index
+        return Some((start_index, end_index, chosen.captures))
       }
       None => ()
     }

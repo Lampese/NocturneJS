@@ -55,6 +55,10 @@ fn collect_capture_indices_into(node : RegexNode, out : Array[Int]) -> Unit {
       for entry in nodes {
         collect_capture_indices_into(entry, out)
       }
+    AlternationCached(nodes, _) =>
+      for entry in nodes {
+        collect_capture_indices_into(entry, out)
+      }
     Repeat(inner, _, _, _) => collect_capture_indices_into(inner, out)
     ScopedFlags(_, inner) => collect_capture_indices_into(inner, out)
     LookAhead(inner, _) => collect_capture_indices_into(inner, out)

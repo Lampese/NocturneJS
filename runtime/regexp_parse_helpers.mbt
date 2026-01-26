@@ -426,6 +426,15 @@ fn resolve_backreferences(
       }
       Alternation(resolved)
     }
+    AlternationCached(nodes, _) => {
+      let resolved : Array[RegexNode] = []
+      for entry in nodes {
+        resolved.push(
+          resolve_backreferences(entry, name_indices, capture_count),
+        )
+      }
+      Alternation(resolved)
+    }
     Capture(index, inner) =>
       Capture(index, resolve_backreferences(inner, name_indices, capture_count))
     Repeat(inner, min, max, greedy) =>
@@ -463,13 +472,54 @@ fn regexp_compile(pattern : String, flags : RegexpFlags) -> RegexpProgram raise 
     parser.name_indices,
     parser.capture_count,
   )
+  let cached = cache_alternations(resolved)
   if parser.pos < parser_len(parser) {
     fail("regexp parse error")
   }
   RegexpProgram::{
-    root: resolved,
+    root: cached,
     capture_count: parser.capture_count,
     capture_names: parser.capture_names,
     flags,
+  }
+}
+
+///|
+fn cache_alternations(node : RegexNode) -> RegexNode {
+  match node {
+    Sequence(nodes) => {
+      let cached : Array[RegexNode] = []
+      for entry in nodes {
+        cached.push(cache_alternations(entry))
+      }
+      Sequence(cached)
+    }
+    Alternation(nodes) => {
+      let cached_nodes : Array[RegexNode] = []
+      for entry in nodes {
+        cached_nodes.push(cache_alternations(entry))
+      }
+      let all_indices : Array[Int] = []
+      for entry in cached_nodes {
+        collect_capture_indices_into(entry, all_indices)
+      }
+      let clear_by_branch : Array[Array[Int]] = []
+      for entry in cached_nodes {
+        let branch_indices = collect_capture_indices(entry)
+        clear_by_branch.push(capture_indices_diff(all_indices, branch_indices))
+      }
+      AlternationCached(cached_nodes, clear_by_branch)
+    }
+    AlternationCached(nodes, _) => cache_alternations(Alternation(nodes))
+    Capture(index, inner) => Capture(index, cache_alternations(inner))
+    Repeat(inner, min, max, greedy) =>
+      Repeat(cache_alternations(inner), min, max, greedy)
+    ScopedFlags(flags, inner) =>
+      ScopedFlags(flags, cache_alternations(inner))
+    LookAhead(inner, positive) =>
+      LookAhead(cache_alternations(inner), positive)
+    LookBehind(inner, positive) =>
+      LookBehind(cache_alternations(inner), positive)
+    _ => node
   }
 }

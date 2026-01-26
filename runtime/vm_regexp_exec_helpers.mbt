@@ -18,6 +18,41 @@ fn regexp_exec_method(rx : Value, input : Value) -> Value raise {
 }
 
 ///|
+fn regexp_test_method(rx : Value, input : Value) -> Bool raise {
+  let exec_method = property_get(rx, "exec")
+  if is_callable(exec_method) {
+    match exec_method {
+      Builtin(builtin) =>
+        if builtin.kind == BuiltinFunction::RegExpExec {
+          return regexp_test_builtin(rx, input)
+        }
+      _ => ()
+    }
+    let result = call_value_with_this(exec_method, [input], rx)
+    if is_object_like(result) || result is Null {
+      return !(result is Null)
+    }
+    let _ = throw_type_error("RegExp exec method must return an object or null")
+    return false
+  }
+  regexp_test_builtin(rx, input)
+}
+
+///|
+fn regexp_test_builtin(rx : Value, input : Value) -> Bool raise {
+  match regexp_object_from_value(rx) {
+    Some((obj, data)) => {
+      let text = to_string_strict(input)
+      regexp_test_value(obj, data, text)
+    }
+    None => {
+      let _ = throw_type_error("not a regexp")
+      false
+    }
+  }
+}
+
+///|
 fn regexp_exec_value(
   obj : ObjectValue,
   data : RegexpData,
@@ -73,6 +108,7 @@ fn regexp_exec_value(
       let result = new_array_value(elements)
       match result {
         Array(arr) => {
+          props_convert_to_dict(arr.props)
           props_set(arr.props, "index", property_data(Number(Double::from_int(start))))
           props_set(arr.props, "input", property_data(String(input)))
           props_set(arr.props, "groups", property_data(groups_value))
@@ -94,6 +130,50 @@ fn regexp_exec_value(
 }
 
 ///|
+fn regexp_test_value(
+  obj : ObjectValue,
+  data : RegexpData,
+  input : String,
+) -> Bool raise {
+  let len = input.length()
+  let last_index_value = regexp_last_index(obj)
+  let mut exec_data = data
+  match obj.regexp_data {
+    Some(current) => exec_data = current
+    None => ()
+  }
+  let use_last_index = exec_data.global || exec_data.sticky
+  let mut last_index = if use_last_index { last_index_value } else { 0L }
+  if use_last_index {
+    let len64 = Int64::from_int(len)
+    if last_index > len64 {
+      set_regexp_last_index(obj, 0)
+      return false
+    }
+    if (exec_data.unicode || exec_data.unicode_sets) &&
+      !is_valid_unicode_index(input, Int64::to_int(last_index)) {
+      set_regexp_last_index(obj, 0)
+      last_index = 0L
+    }
+  }
+  let start_index = if use_last_index { Int64::to_int(last_index) } else { 0 }
+  match regexp_match_indices_from(exec_data, input, start_index, exec_data.sticky) {
+    None => {
+      if use_last_index {
+        set_regexp_last_index(obj, 0)
+      }
+      false
+    }
+    Some((_, end, _)) => {
+      if use_last_index {
+        set_regexp_last_index(obj, end)
+      }
+      true
+    }
+  }
+}
+
+///|
 fn regexp_match_from(
   data : RegexpData,
   input : String,
@@ -101,6 +181,16 @@ fn regexp_match_from(
   sticky : Bool,
 ) -> RegexpMatch? {
   regexp_match_from_program(data.regex, input, start, sticky)
+}
+
+///|
+fn regexp_match_indices_from(
+  data : RegexpData,
+  input : String,
+  start : Int,
+  sticky : Bool,
+) -> (Int, Int, Array[CaptureSpan?])? {
+  regexp_match_indices_from_program(data.regex, input, start, sticky)
 }
 
 ///|
@@ -126,6 +216,7 @@ fn build_regexp_groups(
     Object(obj) => obj
     _ => new_object_struct(None)
   }
+  props_convert_to_dict(groups_obj.props)
   let mut i = 0
   while i < capture_names.length() {
     match capture_names[i] {
@@ -162,6 +253,10 @@ fn build_regexp_indices(
       Object(obj) => Some(obj)
       _ => None
     }
+    match groups_obj {
+      Some(obj) => props_convert_to_dict(obj.props)
+      None => ()
+    }
   }
   let pair : Array[Value?] = [
     Some(Number(Double::from_int(start))),
@@ -194,7 +289,10 @@ fn build_regexp_indices(
   }
   let indices_value = new_array_value(values)
   match indices_value {
-    Array(arr) => props_set(arr.props, "groups", property_data(groups_value))
+    Array(arr) => {
+      props_convert_to_dict(arr.props)
+      props_set(arr.props, "groups", property_data(groups_value))
+    }
     _ => ()
   }
   indices_value
