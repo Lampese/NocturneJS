@@ -16,20 +16,7 @@ fn property_get_from_props_raw(
   name : String,
   receiver : Value,
 ) -> Value? raise {
-  match props_get(props, name) {
-    Some(prop) =>
-      Some(
-        match prop.getter {
-          Some(getter) =>
-            match getter {
-              Undefined | Null => Undefined
-              _ => call_value_with_this(getter, [], receiver)
-            }
-          None => prop.value
-        },
-      )
-    None => None
-  }
+  props_get_value_with_receiver(props, name, receiver)
 }
 
 ///|
@@ -39,6 +26,12 @@ fn property_get_from_chain(
   name : String,
   receiver : Value,
 ) -> Value raise {
+  if props_is_empty(props) {
+    return match proto {
+      Some(parent) => property_get_with_receiver(parent, name, receiver)
+      None => Undefined
+    }
+  }
   match property_get_from_props(props, name, receiver) {
     Some(value) => value
     None =>
@@ -56,6 +49,22 @@ fn property_get_from_chain_raw(
   name : String,
   receiver : Value,
 ) -> Value raise {
+  if props_is_empty(props) {
+    return match proto {
+      Some(parent) =>
+        match props_map_for_value(parent) {
+          Some(parent_props) =>
+            property_get_from_chain_raw(
+              parent_props,
+              proto_for_value(parent),
+              name,
+              receiver,
+            )
+          None => Undefined
+        }
+      None => Undefined
+    }
+  }
   match property_get_from_props_raw(props, name, receiver) {
     Some(value) => value
     None =>

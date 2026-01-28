@@ -39,84 +39,150 @@ fn bytecode_get_prop_cached_props(
   proto : Value?,
   name : String,
 ) -> Value? raise {
-  let shape_id = match props_shape_id(props) {
-    Some(value) => value
-    None => return None
-  }
-  let version = props_version(props)
-  match cache[cache_index] {
-    Some(entry) =>
-      if entry.shape_id == shape_id && entry.version == version {
-        if entry.kind == PROP_CACHE_OWN {
-          match props_get_data_slot_value(props, entry.index) {
-            Some(value) => return Some(value)
-            None => ()
-          }
-        } else if entry.kind == PROP_CACHE_PROTO {
-          match proto {
-            Some(Object(proto_obj)) =>
-              if proto_obj.id == entry.proto_id &&
-                props_version(proto_obj.props) == entry.proto_version {
-                match props_get_data_slot_value(proto_obj.props, entry.index) {
-                  Some(value) => return Some(value)
-                  None => ()
+  match props.repr {
+    PropsRepr::Shape(shape, slots) => {
+      let shape_id = shape.id
+      match cache[cache_index] {
+        Some(entry) =>
+          if entry.shape_id == shape_id {
+            let version = props.version
+            if entry.version == version {
+              if entry.kind == PROP_CACHE_OWN {
+                let index = entry.index
+                if index >= 0 && index < slots.length() {
+                  match slots[index] {
+                    PropSlot::Data(value) => return Some(value)
+                    _ => ()
+                  }
+                }
+              } else if entry.kind == PROP_CACHE_PROTO {
+                match proto {
+                  Some(Object(proto_obj)) =>
+                    if proto_obj.id == entry.proto_id &&
+                      proto_obj.props.version == entry.proto_version {
+                      match proto_obj.props.repr {
+                        PropsRepr::Shape(_, proto_slots) =>
+                          if entry.index >= 0 &&
+                            entry.index < proto_slots.length() {
+                            match proto_slots[entry.index] {
+                              PropSlot::Data(value) => return Some(value)
+                              _ => ()
+                            }
+                          }
+                        _ => ()
+                      }
+                    }
+                  _ => ()
                 }
               }
-            _ => ()
+            }
           }
-        }
+        None => ()
       }
-    None => ()
-  }
-  match props_get_data_slot(props, name) {
-    Some((index, _, value)) => {
-      cache[cache_index] =
-        Some(PropCacheEntry::{
-          kind: PROP_CACHE_OWN,
-          shape_id,
-          version,
-          index,
-          proto_id: -1,
-          proto_version: 0,
-        })
-      return Some(value)
+      match shape.entry_map.get(name) {
+        Some(index) =>
+          if index >= 0 && index < slots.length() {
+            match slots[index] {
+              PropSlot::Data(value) => {
+                let version = props.version
+                cache[cache_index] =
+                  Some(PropCacheEntry::{
+                    kind: PROP_CACHE_OWN,
+                    shape_id,
+                    version,
+                    index,
+                    proto_id: -1,
+                    proto_version: 0,
+                  })
+                return Some(value)
+              }
+              PropSlot::Accessor(getter, _) =>
+                match getter {
+                  Undefined | Null => return Some(Undefined)
+                  _ => return None
+                }
+            }
+          } else {
+            return None
+          }
+        None => ()
+      }
+      match proto {
+        Some(Object(proto_obj)) =>
+          if proto_obj.proxy_data is None &&
+            proto_obj.string_data is None &&
+            !proto_obj.is_module_namespace {
+            let proto_props = proto_obj.props
+            match proto_props.repr {
+              PropsRepr::Shape(proto_shape, proto_slots) =>
+                match proto_shape.entry_map.get(name) {
+                  Some(index) =>
+                    if index >= 0 && index < proto_slots.length() {
+                      match proto_slots[index] {
+                        PropSlot::Data(value) => {
+                          let proto_version = proto_props.version
+                          let version = props.version
+                          cache[cache_index] =
+                            Some(PropCacheEntry::{
+                              kind: PROP_CACHE_PROTO,
+                              shape_id,
+                              version,
+                              index,
+                              proto_id: proto_obj.id,
+                              proto_version,
+                            })
+                          return Some(value)
+                        }
+                        PropSlot::Accessor(getter, _) =>
+                          match getter {
+                            Undefined | Null => return Some(Undefined)
+                            _ => return None
+                          }
+                      }
+                    } else {
+                      return None
+                    }
+                  None => ()
+                }
+              _ => ()
+            }
+          }
+        _ => ()
+      }
+      None
     }
-    None =>
-      if props_contains(props, name) {
-        return None
-      }
-  }
-  match proto {
-    Some(Object(proto_obj)) =>
-      if proto_obj.proxy_data is None &&
-        proto_obj.string_data is None &&
-        !proto_obj.is_module_namespace {
-        let proto_props = proto_obj.props
-        let proto_version = props_version(proto_props)
-        match props_get_data_slot(proto_props, name) {
-          Some((index, _, value)) => {
-            cache[cache_index] =
-              Some(PropCacheEntry::{
-                kind: PROP_CACHE_PROTO,
-                shape_id,
-                version,
-                index,
-                proto_id: proto_obj.id,
-                proto_version,
-              })
-            return Some(value)
+    PropsRepr::Dict(dict) =>
+      match dict.map.get(name) {
+        Some(prop) =>
+          match prop.getter {
+            Some(getter) =>
+              match getter {
+                Undefined | Null => Some(Undefined)
+                _ => None
+              }
+            None => Some(prop.value)
           }
-          None => ()
-        }
+        None => None
       }
-    _ => ()
   }
-  None
 }
 
 ///|
 fn bytecode_fast_get_prop(target : Value, name : String) -> Value? raise {
   match target {
+    String(value) => {
+      if name == "length" {
+        return Some(Number(Double::from_int(value.length())))
+      }
+      match parse_array_index(name) {
+        Some(index) =>
+          if index >= 0 && index < value.length() {
+            return Some(String(value.unsafe_substring(start=index, end=index + 1)))
+          }
+        None => ()
+      }
+      None
+    }
     Object(obj) =>
       if obj.date_data is Some(_) && props_is_empty(obj.props) {
         match obj.proto {
@@ -202,50 +268,49 @@ fn bytecode_set_prop_cached(
         obj.string_data is None &&
         !obj.is_module_namespace {
         let props = obj.props
-        let shape_id = match props_shape_id(props) {
-          Some(value) => value
-          None => return false
-        }
-        let version = props_version(props)
-        match cache[cache_index] {
-          Some(entry) =>
-            if entry.kind == PROP_CACHE_OWN &&
-              entry.shape_id == shape_id &&
-              entry.version == version {
-              if props_set_data_slot_value(props, entry.index, value) {
-                let new_version = props_version(props)
-                cache[cache_index] =
-                  Some(PropCacheEntry::{
-                    kind: PROP_CACHE_OWN,
-                    shape_id,
-                    version: new_version,
-                    index: entry.index,
-                    proto_id: -1,
-                    proto_version: 0,
-                  })
-                return true
-              }
+        match props.repr {
+          PropsRepr::Shape(shape, _) => {
+            let shape_id = shape.id
+            match cache[cache_index] {
+              Some(entry) =>
+                if entry.kind == PROP_CACHE_OWN &&
+                  entry.shape_id == shape_id &&
+                  entry.version == props.version {
+                  if props_set_data_slot_value(props, entry.index, value) {
+                    let new_version = props.version
+                    cache[cache_index] =
+                      Some(PropCacheEntry::{
+                        kind: PROP_CACHE_OWN,
+                        shape_id,
+                        version: new_version,
+                        index: entry.index,
+                        proto_id: -1,
+                        proto_version: 0,
+                      })
+                    return true
+                  }
+                }
+              None => ()
             }
-          None => ()
-        }
-        match props_get_data_slot(props, name) {
-          Some((index, writable, _)) =>
-            if writable {
-              if props_set_data_slot_value(props, index, value) {
-                let new_version = props_version(props)
-                cache[cache_index] =
-                  Some(PropCacheEntry::{
-                    kind: PROP_CACHE_OWN,
-                    shape_id,
-                    version: new_version,
-                    index,
-                    proto_id: -1,
-                    proto_version: 0,
-                  })
-                return true
-              }
+            match shape.entry_map.get(name) {
+              Some(index) =>
+                if props_set_data_slot_value(props, index, value) {
+                  let new_version = props.version
+                  cache[cache_index] =
+                    Some(PropCacheEntry::{
+                      kind: PROP_CACHE_OWN,
+                      shape_id,
+                      version: new_version,
+                      index,
+                      proto_id: -1,
+                      proto_version: 0,
+                    })
+                  return true
+                }
+              None => ()
             }
-          None => ()
+          }
+          _ => ()
         }
       }
     _ => ()

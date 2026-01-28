@@ -306,6 +306,50 @@ fn props_get(props : Props, name : String) -> Property? {
 }
 
 ///|
+fn props_get_value_with_receiver(
+  props : Props,
+  name : String,
+  receiver : Value,
+) -> Value? raise {
+  match props.repr {
+    PropsRepr::Shape(shape, slots) =>
+      match shape.entry_map.get(name) {
+        Some(index) =>
+          if index >= 0 && index < slots.length() {
+            match slots[index] {
+              PropSlot::Data(value) => Some(value)
+              PropSlot::Accessor(getter, _) =>
+                Some(
+                  match getter {
+                    Undefined | Null => Undefined
+                    _ => call_value_with_this(getter, [], receiver)
+                  },
+                )
+            }
+          } else {
+            None
+          }
+        None => None
+      }
+    PropsRepr::Dict(dict) =>
+      match dict.map.get(name) {
+        Some(prop) =>
+          Some(
+            match prop.getter {
+              Some(getter) =>
+                match getter {
+                  Undefined | Null => Undefined
+                  _ => call_value_with_this(getter, [], receiver)
+                }
+              None => prop.value
+            },
+          )
+        None => None
+      }
+  }
+}
+
+///|
 fn props_contains(props : Props, name : String) -> Bool {
   match props.repr {
     PropsRepr::Shape(shape, _) => shape.entry_map.contains(name)
