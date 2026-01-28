@@ -2203,30 +2203,34 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
             BytecodeOp::AssignArray =>
               if index >= 0 && index < assign_array_pool.length() {
                 let def = assign_array_pool[index]
-                let value = with_gc_frame(fn() raise {
-                  let value = bytecode_stack_pop(stack)
-                  let _ = gc_root_push(value)
+                let value = bytecode_stack_peek(stack)
+                try {
                   destructure_array_pattern(env, def.pattern, value, fn(name, v) raise {
                     env_set(env, name, v)
                   })
-                  value
-                })
-                stack.push(value)
+                } catch {
+                  err => {
+                    let _ = bytecode_stack_pop(stack)
+                    raise err
+                  }
+                }
               } else {
                 let _ = throw_type_error("invalid bytecode assign array")
               }
             BytecodeOp::AssignObject =>
               if index >= 0 && index < assign_object_pool.length() {
                 let def = assign_object_pool[index]
-                let value = with_gc_frame(fn() raise {
-                  let value = bytecode_stack_pop(stack)
-                  let _ = gc_root_push(value)
+                let value = bytecode_stack_peek(stack)
+                try {
                   destructure_object_pattern(env, def.pattern, value, fn(name, v) raise {
                     env_set(env, name, v)
                   })
-                  value
-                })
-                stack.push(value)
+                } catch {
+                  err => {
+                    let _ = bytecode_stack_pop(stack)
+                    raise err
+                  }
+                }
               } else {
                 let _ = throw_type_error("invalid bytecode assign object")
               }
@@ -2244,12 +2248,16 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
             BytecodeOp::AssignForInExpr =>
               if index >= 0 && index < assign_for_in_pool.length() {
                 let def = assign_for_in_pool[index]
-                let _ = with_gc_frame(fn() raise {
-                  let value = bytecode_stack_pop(stack)
-                  let _ = gc_root_push(value)
+                let value = bytecode_stack_peek(stack)
+                try {
                   assign_for_in_expr(env, def.expr, value)
-                  Undefined
-                })
+                  let _ = bytecode_stack_pop(stack)
+                } catch {
+                  err => {
+                    let _ = bytecode_stack_pop(stack)
+                    raise err
+                  }
+                }
               } else {
                 let _ = throw_type_error("invalid bytecode assign for-in")
               }
@@ -2259,9 +2267,8 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
             BytecodeOp::VarDeclArray =>
               if index >= 0 && index < var_decl_array_pool.length() {
                 let def = var_decl_array_pool[index]
-                let _ = with_gc_frame(fn() raise {
-                  let value = bytecode_stack_pop(stack)
-                  let _ = gc_root_push(value)
+                let value = bytecode_stack_peek(stack)
+                try {
                   let assign = fn(name : String, v : Value) raise {
                     match def.kind {
                       @engine.VarKind::ConstDecl =>
@@ -2271,17 +2278,21 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
                     }
                   }
                   destructure_array_pattern(env, def.pattern, value, assign)
-                  Undefined
-                })
+                  let _ = bytecode_stack_pop(stack)
+                } catch {
+                  err => {
+                    let _ = bytecode_stack_pop(stack)
+                    raise err
+                  }
+                }
               } else {
                 let _ = throw_type_error("invalid bytecode var decl array")
               }
             BytecodeOp::VarDeclObject =>
               if index >= 0 && index < var_decl_object_pool.length() {
                 let def = var_decl_object_pool[index]
-                let _ = with_gc_frame(fn() raise {
-                  let value = bytecode_stack_pop(stack)
-                  let _ = gc_root_push(value)
+                let value = bytecode_stack_peek(stack)
+                try {
                   let assign = fn(name : String, v : Value) raise {
                     match def.kind {
                       @engine.VarKind::ConstDecl =>
@@ -2291,8 +2302,13 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
                     }
                   }
                   destructure_object_pattern(env, def.pattern, value, assign)
-                  Undefined
-                })
+                  let _ = bytecode_stack_pop(stack)
+                } catch {
+                  err => {
+                    let _ = bytecode_stack_pop(stack)
+                    raise err
+                  }
+                }
               } else {
                 let _ = throw_type_error("invalid bytecode var decl object")
               }
