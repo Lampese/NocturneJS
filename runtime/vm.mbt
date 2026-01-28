@@ -257,6 +257,7 @@ pub fn reset_runtime_state() -> Unit {
   atomics_waiter_list_ref.update(fn(_) { [] })
   atomics_waiter_next_id_ref.update(fn(_) { 1 })
   atomics_waiter_stack_ref.update(fn(_) { Map::new() })
+  atomics_waiter_pending_duration_ref.update(fn(_) { Map::new() })
   atomics_notify_time_ref.update(fn(_) { Map::new() })
   module_table_clear()
   module_exports_stack_clear()

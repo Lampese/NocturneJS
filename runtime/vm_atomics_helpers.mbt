@@ -591,16 +591,8 @@ fn atomics_wait_value(args : Array[Value]) -> Value raise {
   }
   match current_agent_id() {
     Some(agent_id) => {
-      let immediate_timeout = 50L
-      if !infinite && timeout_ms <= immediate_timeout {
-        let _ = agent_clock_advance(timeout_ms)
-        return String("timed-out")
-      }
       let now = agent_clock_now()
       let deadline = if infinite { None } else { Some(now + timeout_ms) }
-      if !infinite {
-        let _ = agent_local_clock_advance_to(agent_id, now + timeout_ms)
-      }
       let waiter_id = atomics_next_waiter_id()
       let waiter = AtomicsWaiter::{
         id: waiter_id,
@@ -609,9 +601,13 @@ fn atomics_wait_value(args : Array[Value]) -> Value raise {
         status: AtomicsWaitStatus::Waiting,
         start_time: now,
         deadline,
+        notify_time: None,
       }
       atomics_waiter_add(waiter)
       atomics_agent_push_waiter(agent_id, waiter_id)
+      if !infinite {
+        atomics_agent_set_pending_duration(agent_id, waiter_id)
+      }
       let token = atomics_waiter_token_prefix + Int::to_string(waiter_id)
       String(token)
     }
@@ -649,7 +645,7 @@ fn atomics_notify_value(args : Array[Value]) -> Value raise {
           if waiter.status == AtomicsWaitStatus::Waiting &&
             waiter.buffer_id == data.buffer.id &&
             waiter.byte_index == atomics_byte_index(data, index) {
-            atomics_waiter_update_status(id, AtomicsWaitStatus::Ok)
+            atomics_waiter_update_status(id, AtomicsWaitStatus::Ok, Some(now))
             woken = woken + 1
           }
         None => ()

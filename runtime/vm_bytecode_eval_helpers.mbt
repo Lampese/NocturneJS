@@ -517,15 +517,42 @@ fn gen_bytecode_eval_expr_cont(
   match bytecode_compile_expr(expr, allow_yield, allow_await) {
     Some(bytecode) => {
       let state = bytecode_exec_state_new(env, bytecode)
-      let step = gen_bytecode_wrap_step(
+      let mut resume_was_return = false
+      fn wrap_resume_step(step : GenStep) -> GenStep {
+        match step {
+          Yield(value, next_step) =>
+            Yield(value, fn(resume_state) raise {
+              match resume_state {
+                GenResume::Return(_) => resume_was_return = true
+                _ => ()
+              }
+              wrap_resume_step(next_step(resume_state))
+            })
+          Await(value, next_step) =>
+            Await(value, fn(resume_state) raise {
+              match resume_state {
+                GenResume::Return(_) => resume_was_return = true
+                _ => ()
+              }
+              wrap_resume_step(next_step(resume_state))
+            })
+          Done(control) => Done(control)
+        }
+      }
+      let step = wrap_resume_step(gen_bytecode_wrap_step(
         bytecode_exec_step(state, GenResume::Next(Undefined)),
         base_roots,
         state,
-      )
+      ))
       gen_bind(step, fn(control) raise {
         match control {
           Normal(value) => k(value)
-          Return(value) => k(value)
+          Return(value) =>
+            if resume_was_return {
+              Done(Return(value))
+            } else {
+              k(value)
+            }
           Throw(value) => Done(Throw(value))
           Break(label, value_opt) => Done(Break(label, value_opt))
           Continue(label, value_opt) => Done(Continue(label, value_opt))
@@ -561,7 +588,12 @@ fn gen_bytecode_eval_block(
       gen_bind(step, fn(control) raise {
         match control {
           Normal(value) => Done(Normal(value))
-          Return(value) => Done(Normal(value))
+          Return(value) =>
+            if current_function_is_async_generator() {
+              gen_async_return(value)
+            } else {
+              Done(Return(value))
+            }
           Throw(value) => Done(Throw(value))
           Break(label, value_opt) => Done(Break(label, value_opt))
           Continue(label, value_opt) => Done(Continue(label, value_opt))

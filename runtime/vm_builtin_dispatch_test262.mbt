@@ -106,8 +106,9 @@ fn call_builtin_test262(
       Undefined
     }
     BuiltinFunction::Test262AgentReport => {
-      if current_agent_id() is None {
-        return throw_type_error("must be called inside an agent")
+      let agent_id = match current_agent_id() {
+        Some(id) => id
+        None => return throw_type_error("must be called inside an agent")
       }
       let message = if args.is_empty() {
         "undefined"
@@ -115,17 +116,24 @@ fn call_builtin_test262(
         to_string_value(args[0])
       }
       let waiter_ids = atomics_collect_waiter_ids(message)
-      if waiter_ids.is_empty() {
-        match current_agent_id() {
-          Some(id) =>
-            match atomics_agent_last_waiter(id) {
-              Some(waiter_id) => waiter_ids.push(waiter_id)
-              None => ()
-            }
+      let pending_duration = atomics_agent_take_pending_duration(agent_id)
+      let num = string_to_number(message)
+      let message_is_number = !Double::is_nan(num) && !Double::is_inf(num)
+      let mut duration_waiter_id : Int? = None
+      match pending_duration {
+        Some(waiter_id) =>
+          if waiter_ids.is_empty() && message_is_number {
+            duration_waiter_id = Some(waiter_id)
+          }
+        None => ()
+      }
+      if waiter_ids.is_empty() && duration_waiter_id is None {
+        match atomics_agent_last_waiter(agent_id) {
+          Some(waiter_id) => waiter_ids.push(waiter_id)
           None => ()
         }
       }
-      agent_report_push(message, waiter_ids)
+      agent_report_push(message, waiter_ids, duration_waiter_id)
       Undefined
     }
     BuiltinFunction::Test262AgentLeaving => {

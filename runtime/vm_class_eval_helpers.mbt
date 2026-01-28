@@ -1,10 +1,6 @@
 ///|
 fn class_eval_expr(env : Env, expr : @engine.Expr) -> Value raise {
-  if bytecode_class_eval_enabled() {
-    bytecode_eval_expr(env, expr)
-  } else {
-    eval_expr(env, expr)
-  }
+  bytecode_eval_expr(env, expr)
 }
 
 ///|
@@ -23,11 +19,7 @@ fn class_obj_key_property_name(
 
 ///|
 fn class_eval_block(env : Env, stmts : Array[@engine.Stmt]) -> Value raise {
-  if bytecode_class_eval_enabled() {
-    bytecode_eval_block(env, stmts)
-  } else {
-    eval_block(env, stmts)
-  }
+  bytecode_eval_block(env, stmts)
 }
 
 ///|
@@ -36,11 +28,7 @@ fn gen_class_eval_expr_cont(
   expr : @engine.Expr,
   k : (Value) -> GenStep raise,
 ) -> GenStep raise {
-  if bytecode_class_eval_enabled() {
-    gen_bytecode_eval_expr_cont(env, expr, k)
-  } else {
-    gen_eval_expr_cont(env, expr, k)
-  }
+  gen_bytecode_eval_expr_cont(env, expr, k)
 }
 
 ///|
@@ -48,11 +36,7 @@ fn gen_class_eval_block(
   env : Env,
   stmts : Array[@engine.Stmt],
 ) -> GenStep raise {
-  if bytecode_class_eval_enabled() {
-    gen_bytecode_eval_block(env, stmts)
-  } else {
-    gen_eval_block(env, stmts)
-  }
+  gen_bytecode_eval_block(env, stmts)
 }
 
 ///|

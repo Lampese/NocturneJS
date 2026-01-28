@@ -27,12 +27,14 @@ priv struct AtomicsWaiter {
   status : AtomicsWaitStatus
   start_time : Int64
   deadline : Int64?
+  notify_time : Int64?
 }
 
 ///|
 priv struct AgentReportEntry {
   message : String
   waiter_ids : Array[Int]
+  duration_waiter_id : Int?
 }
 
 ///|
@@ -75,6 +77,11 @@ let atomics_waiter_stack_ref : Ref[Map[Int, Array[Int]]] = Ref::new(Map::new())
 
 ///|
 let atomics_notify_time_ref : Ref[Map[Int, Int64]] = Ref::new(Map::new())
+
+///|
+let atomics_waiter_pending_duration_ref : Ref[Map[Int, Int]] = Ref::new(
+  Map::new(),
+)
 
 ///|
 let atomics_waiter_token_prefix = "\u{00}atomics_waiter:"
@@ -312,7 +319,11 @@ fn atomics_waiter_add(waiter : AtomicsWaiter) -> Unit {
 }
 
 ///|
-fn atomics_waiter_update_status(id : Int, status : AtomicsWaitStatus) -> Unit {
+fn atomics_waiter_update_status(
+  id : Int,
+  status : AtomicsWaitStatus,
+  notify_time : Int64?,
+) -> Unit {
   match atomics_waiter_get(id) {
     Some(waiter) => {
       let updated = AtomicsWaiter::{
@@ -322,6 +333,10 @@ fn atomics_waiter_update_status(id : Int, status : AtomicsWaitStatus) -> Unit {
         status,
         start_time: waiter.start_time,
         deadline: waiter.deadline,
+        notify_time: match notify_time {
+          Some(time) => Some(time)
+          None => waiter.notify_time
+        },
       }
       atomics_waiter_set(updated)
     }
@@ -345,6 +360,7 @@ fn atomics_update_waiter_timeouts(now : Int64) -> Unit {
                   status: AtomicsWaitStatus::TimedOut,
                   start_time: waiter.start_time,
                   deadline: waiter.deadline,
+                  notify_time: waiter.notify_time,
                 })
               }
             None => ()
@@ -379,6 +395,25 @@ fn atomics_agent_push_waiter(agent_id : Int, waiter_id : Int) -> Unit {
 }
 
 ///|
+fn atomics_agent_set_pending_duration(agent_id : Int, waiter_id : Int) -> Unit {
+  atomics_waiter_pending_duration_ref.update(fn(table) {
+    table.set(agent_id, waiter_id)
+    table
+  })
+}
+
+///|
+fn atomics_agent_take_pending_duration(agent_id : Int) -> Int? {
+  let mut value : Int? = None
+  atomics_waiter_pending_duration_ref.update(fn(table) {
+    value = table.get(agent_id)
+    let _ = table.remove(agent_id)
+    table
+  })
+  value
+}
+
+///|
 fn atomics_agent_last_waiter(agent_id : Int) -> Int? {
   let mut value : Int? = None
   atomics_waiter_stack_ref.update(fn(table) {
@@ -405,6 +440,30 @@ fn atomics_waiter_status_string(id : Int, now : Int64) -> String {
         AtomicsWaitStatus::Waiting => "timed-out"
       }
     None => "timed-out"
+  }
+}
+
+///|
+fn atomics_waiter_duration_ms(waiter_id : Int, now : Int64) -> Int64 {
+  match atomics_waiter_get(waiter_id) {
+    Some(waiter) => {
+      let start = waiter.start_time
+      let end = match waiter.status {
+        AtomicsWaitStatus::Ok =>
+          match waiter.notify_time {
+            Some(time) => time
+            None => now
+          }
+        AtomicsWaitStatus::TimedOut =>
+          match waiter.deadline {
+            Some(deadline) => deadline
+            None => now
+          }
+        AtomicsWaitStatus::Waiting => now
+      }
+      if end > start { end - start } else { 0L }
+    }
+    None => 0L
   }
 }
 
@@ -539,8 +598,12 @@ fn atomics_resolve_message(
 }
 
 ///|
-fn agent_report_push(message : String, waiter_ids : Array[Int]) -> Unit {
-  let entry = AgentReportEntry::{ message, waiter_ids }
+fn agent_report_push(
+  message : String,
+  waiter_ids : Array[Int],
+  duration_waiter_id : Int?,
+) -> Unit {
+  let entry = AgentReportEntry::{ message, waiter_ids, duration_waiter_id }
   agent_report_queue_ref.update(fn(queue) {
     queue.push(entry)
     queue
@@ -572,10 +635,26 @@ fn agent_report_pop() -> String? {
         }
       }
       if !waiting {
+        match entry.duration_waiter_id {
+          Some(id) =>
+            match atomics_waiter_get(id) {
+              Some(waiter) =>
+                if waiter.status == AtomicsWaitStatus::Waiting {
+                  waiting = true
+                }
+              None => ()
+            }
+          None => ()
+        }
+      }
+      if !waiting {
         ready_index = i
-        resolved = Some(
-          atomics_resolve_message(entry.message, entry.waiter_ids, now),
-        )
+        resolved = match entry.duration_waiter_id {
+          Some(waiter_id) =>
+            Some(Int64::to_string(atomics_waiter_duration_ms(waiter_id, now)))
+          None =>
+            Some(atomics_resolve_message(entry.message, entry.waiter_ids, now))
+        }
         break
       }
       i = i + 1
