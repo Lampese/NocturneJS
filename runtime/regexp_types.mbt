@@ -69,7 +69,6 @@ priv struct MatchState {
 priv struct RegexpMatch {
   start : Int
   end : Int
-  groups : Array[String?]
   indices : Array[CaptureSpan?]
 }
 

@@ -90,20 +90,18 @@ fn regexp_exec_value(
     Some(match_value) => {
       let start = match_value.start
       let end = match_value.end
-      let groups = match_value.groups
+      let elements = build_regexp_elements(
+        input,
+        start,
+        end,
+        match_value.indices,
+      )
       let groups_value = build_regexp_groups(
         exec_data.regex.capture_names,
-        groups,
+        elements,
       )
       if use_last_index {
         set_regexp_last_index(obj, end)
-      }
-      let elements : Array[Value?] = []
-      for entry in groups {
-        match entry {
-          Some(text) => elements.push(Some(String(text)))
-          None => elements.push(None)
-        }
       }
       let result = new_array_value(elements)
       match result {
@@ -204,9 +202,32 @@ fn has_named_captures(capture_names : Array[String?]) -> Bool {
 }
 
 ///|
+fn build_regexp_elements(
+  input : String,
+  start : Int,
+  end : Int,
+  captures : Array[CaptureSpan?],
+) -> Array[Value?] {
+  let values = Array::make(captures.length() + 1, None)
+  values[0] = Some(String(input.unsafe_substring(start=start, end=end)))
+  let mut i = 0
+  for entry in captures {
+    match entry {
+      Some(span) =>
+        values[i + 1] = Some(
+          String(input.unsafe_substring(start=span.start, end=span.end)),
+        )
+      None => ()
+    }
+    i = i + 1
+  }
+  values
+}
+
+///|
 fn build_regexp_groups(
   capture_names : Array[String?],
-  groups : Array[String?],
+  elements : Array[Value?],
 ) -> Value {
   if !has_named_captures(capture_names) {
     return Undefined
@@ -221,8 +242,8 @@ fn build_regexp_groups(
   while i < capture_names.length() {
     match capture_names[i] {
       Some(name) => {
-        let value = match groups.get(i + 1) {
-          Some(Some(text)) => String(text)
+        let value = match elements.get(i + 1) {
+          Some(Some(v)) => v
           _ => Undefined
         }
         if !(value is Undefined) || !props_contains(groups_obj.props, name) {
@@ -243,7 +264,7 @@ fn build_regexp_indices(
   group_indices : Array[CaptureSpan?],
   capture_names : Array[String?],
 ) -> Value {
-  let values : Array[Value?] = []
+  let values = Array::make(group_indices.length() + 1, None)
   let use_groups = has_named_captures(capture_names)
   let mut groups_value = Undefined
   let mut groups_obj : ObjectValue? = None
@@ -262,7 +283,7 @@ fn build_regexp_indices(
     Some(Number(Double::from_int(start))),
     Some(Number(Double::from_int(end))),
   ]
-  values.push(Some(new_array_value(pair)))
+  values[0] = Some(new_array_value(pair))
   let mut i = 0
   for entry in group_indices {
     let val = match entry {
@@ -274,9 +295,9 @@ fn build_regexp_indices(
       None => Undefined
     }
     if val is Undefined {
-      values.push(None)
+      values[i + 1] = None
     } else {
-      values.push(Some(val))
+      values[i + 1] = Some(val)
     }
     match (groups_obj, capture_names.get(i)) {
       (Some(obj), Some(Some(name))) =>

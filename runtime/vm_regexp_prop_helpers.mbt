@@ -101,7 +101,12 @@ fn regexp_to_string_value(this_value : Value?) -> Value raise {
   }
   let source = to_string_strict(property_get(target, "source"))
   let flags = to_string_strict(property_get(target, "flags"))
-  String("/" + source + "/" + flags)
+  let sb = StringBuilder::new()
+  sb.write_char('/')
+  sb.write_string(source)
+  sb.write_char('/')
+  sb.write_string(flags)
+  String(sb.to_string())
 }
 
 ///|

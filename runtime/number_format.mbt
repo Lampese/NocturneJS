@@ -71,12 +71,14 @@ fn number_to_string_radix(value : Double, radix : Int) -> String {
     }
   }
   let frac_str = digits_to_string(frac_digits)
-  let result = "\{int_str}.\{frac_str}"
+  let sb = StringBuilder::new()
   if sign {
-    "-" + result
-  } else {
-    result
+    sb.write_char('-')
   }
+  sb.write_string(int_str)
+  sb.write_char('.')
+  sb.write_string(frac_str)
+  sb.to_string()
 }
 
 ///|
@@ -118,14 +120,16 @@ fn number_to_fixed(value : Double, digits : Int) -> String {
     start=split_at,
     end=digits_str.length(),
   )
-  let result = "\{int_part}.\{frac_part}"
+  let sb = StringBuilder::new()
   if sign && rounded.is_zero() {
-    "-" + result
+    sb.write_char('-')
   } else if sign {
-    "-" + result
-  } else {
-    result
+    sb.write_char('-')
   }
+  sb.write_string(int_part)
+  sb.write_char('.')
+  sb.write_string(frac_part)
+  sb.to_string()
 }
 
 ///|
@@ -170,12 +174,15 @@ fn number_to_exponential(value : Double, digits : Int) -> String {
   let mantissa_str = if digits == 0 { lead } else { "\{lead}.\{tail}" }
   let exp_sign = if exp10 < 0 { "-" } else { "+" }
   let exp_abs = Int::abs(exp10).to_string()
-  let result = "\{mantissa_str}e\{exp_sign}\{exp_abs}"
+  let sb = StringBuilder::new()
   if sign {
-    "-" + result
-  } else {
-    result
+    sb.write_char('-')
   }
+  sb.write_string(mantissa_str)
+  sb.write_char('e')
+  sb.write_string(exp_sign)
+  sb.write_string(exp_abs)
+  sb.to_string()
 }
 
 ///|
@@ -224,12 +231,15 @@ fn number_to_exponential_free(value : Double) -> String {
   let mantissa = if tail.is_empty() { lead } else { "\{lead}.\{tail}" }
   let exp_sign = if exp10 < 0 { "-" } else { "+" }
   let exp_abs = Int::abs(exp10).to_string()
-  let result = "\{mantissa}e\{exp_sign}\{exp_abs}"
+  let sb = StringBuilder::new()
   if sign {
-    "-" + result
-  } else {
-    result
+    sb.write_char('-')
   }
+  sb.write_string(mantissa)
+  sb.write_char('e')
+  sb.write_string(exp_sign)
+  sb.write_string(exp_abs)
+  sb.to_string()
 }
 
 ///|
@@ -289,7 +299,10 @@ fn number_to_precision(value : Double, precision : Int) -> String {
     let tail = digits.unsafe_substring(start=int_len, end=digits.length())
     "\{head}.\{tail}"
   }
-  sign + result
+  let sb = StringBuilder::new()
+  sb.write_string(sign)
+  sb.write_string(result)
+  sb.to_string()
 }
 
 ///|
@@ -323,8 +336,14 @@ fn number_to_string_base10(value : Double) -> String {
       } else {
         "\{lead}.\{trimmed_tail}"
       }
-      let result = "\{mantissa_str}e+\{exp10}"
-      return if sign { "-" + result } else { result }
+      let sb = StringBuilder::new()
+      if sign {
+        sb.write_char('-')
+      }
+      sb.write_string(mantissa_str)
+      sb.write_string("e+")
+      sb.write_string(Int::to_string(exp10))
+      return sb.to_string()
     }
     return if sign { "-" + digits } else { digits }
   }

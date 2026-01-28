@@ -134,6 +134,15 @@ fn json_number_string(value : Double) -> String {
 }
 
 ///|
+fn json_quote_string(text : String) -> String {
+  let sb = StringBuilder::new()
+  sb.write_char('"')
+  sb.write_string(json_escape(text))
+  sb.write_char('"')
+  sb.to_string()
+}
+
+///|
 fn json_stack_contains(stack : Array[Int], id : Int) -> Bool {
   for entry in stack {
     if entry == id {
@@ -168,26 +177,49 @@ fn json_serialize_array(
   state.indent = stepback + state.gap
   let len_value = property_get(value, "length")
   let len = to_length_int64(to_number(len_value))
-  let parts : Array[String] = []
-  let mut i : Int64 = 0
-  while i < len {
-    let key = Int64::to_string(i)
-    let part = json_serialize_property(key, value, state)
-    match part {
-      Some(text) => parts.push(text)
-      None => parts.push("null")
-    }
-    i = i + 1
-  }
-  let result = if parts.is_empty() {
+  let result = if len == 0L {
     "[]"
   } else if state.gap.is_empty() {
-    "[" + parts.join(",") + "]"
+    let sb = StringBuilder::new()
+    sb.write_char('[')
+    let mut i : Int64 = 0
+    while i < len {
+      if i > 0L {
+        sb.write_char(',')
+      }
+      let key = Int64::to_string(i)
+      let part = json_serialize_property(key, value, state)
+      match part {
+        Some(text) => sb.write_string(text)
+        None => sb.write_string("null")
+      }
+      i = i + 1
+    }
+    sb.write_char(']')
+    sb.to_string()
   } else {
     let inner_indent = state.indent
     let outer_indent = stepback
-    let formatted : Array[String] = parts.map(fn(part) { inner_indent + part })
-    "[\n" + formatted.join(",\n") + "\n" + outer_indent + "]"
+    let sb = StringBuilder::new()
+    sb.write_string("[\n")
+    let mut i : Int64 = 0
+    while i < len {
+      if i > 0L {
+        sb.write_string(",\n")
+      }
+      sb.write_string(inner_indent)
+      let key = Int64::to_string(i)
+      let part = json_serialize_property(key, value, state)
+      match part {
+        Some(text) => sb.write_string(text)
+        None => sb.write_string("null")
+      }
+      i = i + 1
+    }
+    sb.write_string("\n")
+    sb.write_string(outer_indent)
+    sb.write_char(']')
+    sb.to_string()
   }
   state.indent = stepback
   if pushed {
@@ -209,30 +241,50 @@ fn json_serialize_object(
     Some(list) => list
     None => own_enumerable_string_keys(value)
   }
-  let parts : Array[String] = []
+  let use_gap = !state.gap.is_empty()
+  let sb = StringBuilder::new()
+  if use_gap {
+    sb.write_string("{\n")
+  } else {
+    sb.write_char('{')
+  }
+  let mut has_any = false
   for key in keys {
     let rendered = json_serialize_property(key, value, state)
     match rendered {
       Some(text) => {
-        let name = json_escape(key)
-        if state.gap.is_empty() {
-          parts.push("\"" + name + "\":" + text)
-        } else {
-          parts.push("\"" + name + "\": " + text)
+        if has_any {
+          if use_gap {
+            sb.write_string(",\n")
+          } else {
+            sb.write_char(',')
+          }
         }
+        if use_gap {
+          sb.write_string(state.indent)
+        }
+        sb.write_char('"')
+        sb.write_string(json_escape(key))
+        sb.write_string("\":")
+        if use_gap {
+          sb.write_char(' ')
+        }
+        sb.write_string(text)
+        has_any = true
       }
       None => ()
     }
   }
-  let result = if parts.is_empty() {
+  let result = if !has_any {
     "{}"
-  } else if state.gap.is_empty() {
-    "{" + parts.join(",") + "}"
+  } else if use_gap {
+    sb.write_string("\n")
+    sb.write_string(stepback)
+    sb.write_char('}')
+    sb.to_string()
   } else {
-    let inner_indent = state.indent
-    let outer_indent = stepback
-    let formatted : Array[String] = parts.map(fn(part) { inner_indent + part })
-    "{\n" + formatted.join(",\n") + "\n" + outer_indent + "}"
+    sb.write_char('}')
+    sb.to_string()
   }
   state.indent = stepback
   if pushed {
@@ -275,7 +327,7 @@ fn json_serialize_property(
     Null => Some("null")
     Bool(v) => Some(if v { "true" } else { "false" })
     Number(num) => Some(json_number_string(num))
-    String(text) => Some("\"" + json_escape(text) + "\"")
+    String(text) => Some(json_quote_string(text))
     _ =>
       if is_array_value(value) {
         Some(json_serialize_array(value, state))
@@ -325,7 +377,7 @@ fn json_stringify_value(value : Value) -> String raise {
       } else {
         Double::to_string(v)
       }
-    String(s) => "\"\{json_escape(s)}\""
+    String(s) => json_quote_string(s)
     Object(obj) => json_stringify_object(obj)
     Array(arr) => json_stringify_array(arr)
     Arguments(args) => json_stringify_arguments(args)
@@ -360,7 +412,7 @@ fn json_stringify_value_with_indent(
       } else {
         Double::to_string(v)
       }
-    String(s) => "\"\{json_escape(s)}\""
+    String(s) => json_quote_string(s)
     Object(obj) => json_stringify_object_with_indent(obj, indent, level)
     Array(arr) => json_stringify_array_with_indent(arr, indent, level)
     Arguments(args) => json_stringify_arguments_with_indent(args, indent, level)
@@ -373,9 +425,16 @@ fn json_stringify_value_with_indent(
 
 ///|
 fn json_stringify_array(arr : ArrayValue) -> String raise {
-  let parts : Array[String] = []
   let len = arr.elements.length()
+  if len == 0 {
+    return "[]"
+  }
+  let sb = StringBuilder::new()
+  sb.write_char('[')
   for i = 0; i < len; i = i + 1 {
+    if i > 0 {
+      sb.write_char(',')
+    }
     let name = Int::to_string(i)
     let mut value_opt : Value? = None
     match props_get(arr.props, name) {
@@ -385,25 +444,26 @@ fn json_stringify_array(arr : ArrayValue) -> String raise {
     match value_opt {
       Some(value) =>
         match value {
-          Undefined => parts.push("null")
-          Function(_) => parts.push("null")
-          Builtin(_) => parts.push("null")
-          _ => parts.push(json_stringify_value(value))
+          Undefined => sb.write_string("null")
+          Function(_) => sb.write_string("null")
+          Builtin(_) => sb.write_string("null")
+          _ => sb.write_string(json_stringify_value(value))
         }
       None =>
         match arr.elements[i] {
-          None => parts.push("null")
+          None => sb.write_string("null")
           Some(value) =>
             match value {
-              Undefined => parts.push("null")
-              Function(_) => parts.push("null")
-              Builtin(_) => parts.push("null")
-              _ => parts.push(json_stringify_value(value))
+              Undefined => sb.write_string("null")
+              Function(_) => sb.write_string("null")
+              Builtin(_) => sb.write_string("null")
+              _ => sb.write_string(json_stringify_value(value))
             }
         }
     }
   }
-  "[" + parts.join(",") + "]"
+  sb.write_char(']')
+  sb.to_string()
 }
 
 ///|
@@ -415,9 +475,18 @@ fn json_stringify_array_with_indent(
   if indent.is_empty() {
     return json_stringify_array(arr)
   }
-  let parts : Array[String] = []
   let len = arr.elements.length()
+  if len == 0 {
+    return "[]"
+  }
+  let sb = StringBuilder::new()
+  sb.write_string("[\n")
+  let inner_indent = json_indent_prefix(indent, level + 1)
   for i = 0; i < len; i = i + 1 {
+    if i > 0 {
+      sb.write_string(",\n")
+    }
+    let mut rendered = "null"
     let name = Int::to_string(i)
     let mut value_opt : Value? = None
     match props_get(arr.props, name) {
@@ -427,51 +496,65 @@ fn json_stringify_array_with_indent(
     match value_opt {
       Some(value) =>
         match value {
-          Undefined => parts.push("null")
-          Function(_) => parts.push("null")
-          Builtin(_) => parts.push("null")
+          Undefined => rendered = "null"
+          Function(_) => rendered = "null"
+          Builtin(_) => rendered = "null"
           _ =>
-            parts.push(
-              json_stringify_value_with_indent(value, indent, level + 1),
-            )
+            rendered =
+              json_stringify_value_with_indent(value, indent, level + 1)
         }
       None =>
         match arr.elements[i] {
-          None => parts.push("null")
+          None => rendered = "null"
           Some(value) =>
             match value {
-              Undefined => parts.push("null")
-              Function(_) => parts.push("null")
-              Builtin(_) => parts.push("null")
+              Undefined => rendered = "null"
+              Function(_) => rendered = "null"
+              Builtin(_) => rendered = "null"
               _ =>
-                parts.push(
-                  json_stringify_value_with_indent(value, indent, level + 1),
-                )
+                rendered =
+                  json_stringify_value_with_indent(value, indent, level + 1)
             }
         }
     }
+    sb.write_string(inner_indent)
+    sb.write_string(rendered)
   }
-  if parts.is_empty() {
-    return "[]"
-  }
-  let inner_indent = json_indent_prefix(indent, level + 1)
   let outer_indent = json_indent_prefix(indent, level)
-  let formatted : Array[String] = parts.map(fn(part) { inner_indent + part })
-  "[\n" + formatted.join(",\n") + "\n" + outer_indent + "]"
+  sb.write_string("\n")
+  sb.write_string(outer_indent)
+  sb.write_char(']')
+  sb.to_string()
 }
 
 ///|
 fn json_stringify_object(obj : ObjectValue) -> String raise {
-  let parts : Array[String] = []
   let target = Object(obj)
   let keys = own_enumerable_string_keys(target)
+  let sb = StringBuilder::new()
+  sb.write_char('{')
+  let mut has_any = false
   for key in keys {
     match json_stringify_member(property_get(target, key)) {
-      Some(rendered) => parts.push("\"\{json_escape(key)}\":\{rendered}")
+      Some(rendered) => {
+        if has_any {
+          sb.write_char(',')
+        }
+        sb.write_char('"')
+        sb.write_string(json_escape(key))
+        sb.write_string("\":")
+        sb.write_string(rendered)
+        has_any = true
+      }
       None => ()
     }
   }
-  "{" + parts.join(",") + "}"
+  if !has_any {
+    "{}"
+  } else {
+    sb.write_char('}')
+    sb.to_string()
+  }
 }
 
 ///|
@@ -483,10 +566,13 @@ fn json_stringify_object_with_indent(
   if indent.is_empty() {
     return json_stringify_object(obj)
   }
-  let parts : Array[String] = []
   let inner_indent = json_indent_prefix(indent, level + 1)
+  let outer_indent = json_indent_prefix(indent, level)
   let target = Object(obj)
   let keys = own_enumerable_string_keys(target)
+  let sb = StringBuilder::new()
+  sb.write_string("{\n")
+  let mut has_any = false
   for key in keys {
     match
       json_stringify_member_with_indent(
@@ -494,27 +580,50 @@ fn json_stringify_object_with_indent(
         indent,
         level + 1,
       ) {
-      Some(rendered) =>
-        parts.push(inner_indent + "\"" + json_escape(key) + "\": " + rendered)
+      Some(rendered) => {
+        if has_any {
+          sb.write_string(",\n")
+        }
+        sb.write_string(inner_indent)
+        sb.write_char('"')
+        sb.write_string(json_escape(key))
+        sb.write_string("\": ")
+        sb.write_string(rendered)
+        has_any = true
+      }
       None => ()
     }
   }
-  if parts.is_empty() {
-    return "{}"
+  if !has_any {
+    "{}"
+  } else {
+    sb.write_string("\n")
+    sb.write_string(outer_indent)
+    sb.write_char('}')
+    sb.to_string()
   }
-  let outer_indent = json_indent_prefix(indent, level)
-  "{\n" + parts.join(",\n") + "\n" + outer_indent + "}"
 }
 
 ///|
 fn json_stringify_arguments(args : ArgumentsValue) -> String raise {
-  let parts : Array[String] = []
+  let sb = StringBuilder::new()
+  sb.write_char('{')
+  let mut has_any = false
   let len = args.elements.length()
   for i = 0; i < len; i = i + 1 {
     if arguments_has_index(args, i) {
       let value = arguments_index_value(args, i)
       match json_stringify_member(value) {
-        Some(rendered) => parts.push("\"\{Int::to_string(i)}\":\{rendered}")
+        Some(rendered) => {
+          if has_any {
+            sb.write_char(',')
+          }
+          sb.write_char('"')
+          sb.write_string(Int::to_string(i))
+          sb.write_string("\":")
+          sb.write_string(rendered)
+          has_any = true
+        }
         None => ()
       }
     }
@@ -532,18 +641,41 @@ fn json_stringify_arguments(args : ArgumentsValue) -> String raise {
           ()
         } else {
           match json_stringify_member(prop.value) {
-            Some(rendered) => parts.push("\"\{json_escape(key)}\":\{rendered}")
+            Some(rendered) => {
+              if has_any {
+                sb.write_char(',')
+              }
+              sb.write_char('"')
+              sb.write_string(json_escape(key))
+              sb.write_string("\":")
+              sb.write_string(rendered)
+              has_any = true
+            }
             None => ()
           }
         }
       None =>
         match json_stringify_member(prop.value) {
-          Some(rendered) => parts.push("\"\{json_escape(key)}\":\{rendered}")
+          Some(rendered) => {
+            if has_any {
+              sb.write_char(',')
+            }
+            sb.write_char('"')
+            sb.write_string(json_escape(key))
+            sb.write_string("\":")
+            sb.write_string(rendered)
+            has_any = true
+          }
           None => ()
         }
     }
   })
-  "{" + parts.join(",") + "}"
+  if !has_any {
+    "{}"
+  } else {
+    sb.write_char('}')
+    sb.to_string()
+  }
 }
 
 ///|
@@ -555,17 +687,27 @@ fn json_stringify_arguments_with_indent(
   if indent.is_empty() {
     return json_stringify_arguments(args)
   }
-  let parts : Array[String] = []
   let len = args.elements.length()
   let inner_indent = json_indent_prefix(indent, level + 1)
+  let outer_indent = json_indent_prefix(indent, level)
+  let sb = StringBuilder::new()
+  sb.write_string("{\n")
+  let mut has_any = false
   for i = 0; i < len; i = i + 1 {
     if arguments_has_index(args, i) {
       let value = arguments_index_value(args, i)
       match json_stringify_member_with_indent(value, indent, level + 1) {
-        Some(rendered) =>
-          parts.push(
-            inner_indent + "\"" + Int::to_string(i) + "\": " + rendered,
-          )
+        Some(rendered) => {
+          if has_any {
+            sb.write_string(",\n")
+          }
+          sb.write_string(inner_indent)
+          sb.write_char('"')
+          sb.write_string(Int::to_string(i))
+          sb.write_string("\": ")
+          sb.write_string(rendered)
+          has_any = true
+        }
         None => ()
       }
     }
@@ -584,28 +726,45 @@ fn json_stringify_arguments_with_indent(
         } else {
           match
             json_stringify_member_with_indent(prop.value, indent, level + 1) {
-            Some(rendered) =>
-              parts.push(
-                inner_indent + "\"" + json_escape(key) + "\": " + rendered,
-              )
+            Some(rendered) => {
+              if has_any {
+                sb.write_string(",\n")
+              }
+              sb.write_string(inner_indent)
+              sb.write_char('"')
+              sb.write_string(json_escape(key))
+              sb.write_string("\": ")
+              sb.write_string(rendered)
+              has_any = true
+            }
             None => ()
           }
         }
       None =>
         match json_stringify_member_with_indent(prop.value, indent, level + 1) {
-          Some(rendered) =>
-            parts.push(
-              inner_indent + "\"" + json_escape(key) + "\": " + rendered,
-            )
+          Some(rendered) => {
+            if has_any {
+              sb.write_string(",\n")
+            }
+            sb.write_string(inner_indent)
+            sb.write_char('"')
+            sb.write_string(json_escape(key))
+            sb.write_string("\": ")
+            sb.write_string(rendered)
+            has_any = true
+          }
           None => ()
         }
     }
   })
-  if parts.is_empty() {
-    return "{}"
+  if !has_any {
+    "{}"
+  } else {
+    sb.write_string("\n")
+    sb.write_string(outer_indent)
+    sb.write_char('}')
+    sb.to_string()
   }
-  let outer_indent = json_indent_prefix(indent, level)
-  "{\n" + parts.join(",\n") + "\n" + outer_indent + "}"
 }
 
 ///|

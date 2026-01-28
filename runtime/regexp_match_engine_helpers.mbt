@@ -1707,25 +1707,10 @@ fn regexp_match_from_program(
       Some(chosen) => {
         let start_index = index
         let end_index = chosen.index
-        let groups : Array[String?] = []
-        groups.push(
-          Some(input.unsafe_substring(start=start_index, end=end_index)),
-        )
-        for entry in chosen.captures {
-          match entry {
-            Some(span) =>
-              groups.push(
-                Some(input.unsafe_substring(start=span.start, end=span.end)),
-              )
-            None => groups.push(None)
-          }
-        }
-        let indices = chosen.captures
         return Some(RegexpMatch::{
           start: start_index,
           end: end_index,
-          groups,
-          indices,
+          indices: chosen.captures,
         })
       }
       None => ()
