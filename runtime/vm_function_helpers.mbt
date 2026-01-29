@@ -159,6 +159,9 @@ fn to_function_value(
     param_inits: func.param_inits,
     body: func.body,
     env,
+    cached_param_env: None,
+    cached_param_env_busy: false,
+    fast_arrow_twoargs_cache: None,
     id: alloc_id(),
     props,
     proto: if func.is_generator && func.is_async {
@@ -308,6 +311,285 @@ fn has_simple_parameter_list(func : FunctionValue) -> Bool {
     }
   }
   true
+}
+
+///|
+fn fast_arrow_twoargs_ok(func : FunctionValue) -> Bool {
+  match func.fast_arrow_twoargs_cache {
+    Some(value) => value
+    None => {
+      let ok = func.is_arrow &&
+        has_simple_parameter_list(func) &&
+        !has_param_expressions(func) &&
+        arrow_body_is_simple_expr(func.body)
+      func.fast_arrow_twoargs_cache = Some(ok)
+      ok
+    }
+  }
+}
+
+///|
+fn arrow_body_is_simple_expr(body : Array[@engine.Stmt]) -> Bool {
+  if body.length() != 1 {
+    return false
+  }
+  match body[0] {
+    @engine.Stmt::Return(Some(expr)) => !expr_has_closure_or_eval(expr)
+    _ => false
+  }
+}
+
+///|
+fn expr_is_direct_eval_callee(expr : @engine.Expr) -> Bool {
+  match unwrap_paren(expr) {
+    @engine.Expr::Ident(name, _) => name == "eval"
+    _ => false
+  }
+}
+
+///|
+fn expr_has_closure_or_eval(expr : @engine.Expr) -> Bool {
+  match expr {
+    @engine.Expr::FunctionExpr(_) => true
+    @engine.Expr::ClassExpr(_) => true
+    @engine.Expr::Call(callee, args, _) => {
+      if expr_is_direct_eval_callee(callee) {
+        return true
+      }
+      if expr_has_closure_or_eval(callee) {
+        return true
+      }
+      for arg in args {
+        if expr_has_closure_or_eval(arg) {
+          return true
+        }
+      }
+      false
+    }
+    @engine.Expr::OptionalChain(base, segments) => {
+      if expr_has_closure_or_eval(base) {
+        return true
+      }
+      for seg in segments {
+        match seg {
+          @engine.ChainSegment::Member(key, _, _) =>
+            if member_key_has_closure_or_eval(key) {
+              return true
+            }
+          @engine.ChainSegment::Call(args, _, _) =>
+            for arg in args {
+              if expr_has_closure_or_eval(arg) {
+                return true
+              }
+            }
+        }
+      }
+      false
+    }
+    @engine.Expr::Member(target, key, _) =>
+      expr_has_closure_or_eval(target) || member_key_has_closure_or_eval(key)
+    @engine.Expr::Assign(_, value, _, _) => expr_has_closure_or_eval(value)
+    @engine.Expr::AssignInvalid(lhs, rhs, _) =>
+      expr_has_closure_or_eval(lhs) || expr_has_closure_or_eval(rhs)
+    @engine.Expr::AssignArray(pattern, value) =>
+      array_pattern_has_closure_or_eval(pattern) ||
+      expr_has_closure_or_eval(value)
+    @engine.Expr::AssignObject(pattern, value) =>
+      object_pattern_has_closure_or_eval(pattern) ||
+      expr_has_closure_or_eval(value)
+    @engine.Expr::AssignOp(_, lhs, rhs, _) =>
+      expr_has_closure_or_eval(lhs) || expr_has_closure_or_eval(rhs)
+    @engine.Expr::AssignMember(target, key, value, _) =>
+      expr_has_closure_or_eval(target) ||
+      member_key_has_closure_or_eval(key) ||
+      expr_has_closure_or_eval(value)
+    @engine.Expr::PrivateIn(_, value, _) => expr_has_closure_or_eval(value)
+    @engine.Expr::Conditional(cond, cons, alt) =>
+      expr_has_closure_or_eval(cond) ||
+      expr_has_closure_or_eval(cons) ||
+      expr_has_closure_or_eval(alt)
+    @engine.Expr::Sequence(items) => {
+      for item in items {
+        if expr_has_closure_or_eval(item) {
+          return true
+        }
+      }
+      false
+    }
+    @engine.Expr::Paren(inner) => expr_has_closure_or_eval(inner)
+    @engine.Expr::New(callee, args) => {
+      if expr_has_closure_or_eval(callee) {
+        return true
+      }
+      for arg in args {
+        if expr_has_closure_or_eval(arg) {
+          return true
+        }
+      }
+      false
+    }
+    @engine.Expr::Binary(_, lhs, rhs, _) =>
+      expr_has_closure_or_eval(lhs) || expr_has_closure_or_eval(rhs)
+    @engine.Expr::Unary(_, value, _) => expr_has_closure_or_eval(value)
+    @engine.Expr::Update(_, value, _, _) => expr_has_closure_or_eval(value)
+    @engine.Expr::Yield(value_opt, _) =>
+      match value_opt {
+        Some(value) => expr_has_closure_or_eval(value)
+        None => false
+      }
+    @engine.Expr::Await(value, _) => expr_has_closure_or_eval(value)
+    @engine.Expr::TemplateLiteral(_, exprs) => {
+      for item in exprs {
+        if expr_has_closure_or_eval(item) {
+          return true
+        }
+      }
+      false
+    }
+    @engine.Expr::TaggedTemplate(tag, _, exprs) => {
+      if expr_has_closure_or_eval(tag) {
+        return true
+      }
+      for item in exprs {
+        if expr_has_closure_or_eval(item) {
+          return true
+        }
+      }
+      false
+    }
+    @engine.Expr::ObjectLiteral(props) => {
+      for prop in props {
+        match prop {
+          @engine.ObjectProp::Method(_, _)
+          | @engine.ObjectProp::Getter(_, _)
+          | @engine.ObjectProp::Setter(_, _) => return true
+          @engine.ObjectProp::KeyValue(key, value) =>
+            if obj_key_has_closure_or_eval(key) ||
+              expr_has_closure_or_eval(value) {
+              return true
+            }
+          @engine.ObjectProp::Shorthand(_) => ()
+          @engine.ObjectProp::Spread(value) =>
+            if expr_has_closure_or_eval(value) {
+              return true
+            }
+        }
+      }
+      false
+    }
+    @engine.Expr::ArrayLiteral(items) => {
+      for item in items {
+        match item {
+          Some(value) =>
+            if expr_has_closure_or_eval(value) {
+              return true
+            }
+          None => ()
+        }
+      }
+      false
+    }
+    @engine.Expr::Spread(value) => expr_has_closure_or_eval(value)
+    _ => false
+  }
+}
+
+///|
+fn member_key_has_closure_or_eval(key : @engine.MemberKey) -> Bool {
+  match key {
+    @engine.MemberKey::Computed(value) => expr_has_closure_or_eval(value)
+    _ => false
+  }
+}
+
+///|
+fn obj_key_has_closure_or_eval(key : @engine.ObjKey) -> Bool {
+  match key {
+    @engine.ObjKey::Computed(value) => expr_has_closure_or_eval(value)
+    _ => false
+  }
+}
+
+///|
+fn array_pattern_elem_has_closure_or_eval(
+  elem : @engine.ArrayPatternElem,
+) -> Bool {
+  match elem {
+    @engine.ArrayPatternElem::Bind(binding, init_opt) =>
+      var_binding_has_closure_or_eval(binding) ||
+      (match init_opt {
+        Some(init) => expr_has_closure_or_eval(init)
+        None => false
+      })
+    @engine.ArrayPatternElem::Rest(binding) =>
+      var_binding_has_closure_or_eval(binding)
+    @engine.ArrayPatternElem::Hole => false
+  }
+}
+
+///|
+fn object_pattern_elem_has_closure_or_eval(
+  elem : @engine.ObjectPatternElem,
+) -> Bool {
+  match elem {
+    @engine.ObjectPatternElem::Bind(key, binding, init_opt) =>
+      obj_key_has_closure_or_eval(key) ||
+      var_binding_has_closure_or_eval(binding) ||
+      (match init_opt {
+        Some(init) => expr_has_closure_or_eval(init)
+        None => false
+      })
+    @engine.ObjectPatternElem::Rest(binding) =>
+      var_binding_has_closure_or_eval(binding)
+  }
+}
+
+///|
+fn array_pattern_has_closure_or_eval(
+  pattern : Array[@engine.ArrayPatternElem],
+) -> Bool {
+  for elem in pattern {
+    if array_pattern_elem_has_closure_or_eval(elem) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn object_pattern_has_closure_or_eval(
+  pattern : Array[@engine.ObjectPatternElem],
+) -> Bool {
+  for elem in pattern {
+    if object_pattern_elem_has_closure_or_eval(elem) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn var_binding_has_closure_or_eval(binding : @engine.VarBinding) -> Bool {
+  match binding {
+    @engine.VarBinding::Name(_) => false
+    @engine.VarBinding::ArrayPattern(pattern) => {
+      for elem in pattern {
+        if array_pattern_elem_has_closure_or_eval(elem) {
+          return true
+        }
+      }
+      false
+    }
+    @engine.VarBinding::ObjectPattern(pattern) => {
+      for elem in pattern {
+        if object_pattern_elem_has_closure_or_eval(elem) {
+          return true
+        }
+      }
+      false
+    }
+    @engine.VarBinding::Target(expr) => expr_has_closure_or_eval(expr)
+  }
 }
 
 ///|

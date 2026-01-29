@@ -199,6 +199,7 @@ fn gc_release_function(func : FunctionValue) -> Unit {
   gc_release_props(func.props)
   gc_release_props(func.private_instance_props)
   bytecode_cache_remove(func.id)
+  bytecode_exec_cache_remove(func.id)
   // Avoid clearing shared AST-backed arrays (params/body/fields) since they are
   // reused across FunctionValue instances and clones.
   rc_replace_optional_value(func.proto, None)
@@ -207,6 +208,10 @@ fn gc_release_function(func : FunctionValue) -> Unit {
   func.home_object = None
   rc_replace_optional_value(func.super_constructor, None)
   func.super_constructor = None
+  rc_replace_optional_env(func.cached_param_env, None)
+  func.cached_param_env = None
+  func.cached_param_env_busy = false
+  func.fast_arrow_twoargs_cache = None
   rc_decref_env(func.env)
   func.source = None
 }

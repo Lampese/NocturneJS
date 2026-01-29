@@ -386,6 +386,16 @@ fn bytecode_call_with_this_onearg(
 }
 
 ///|
+fn bytecode_call_with_this_twoarg(
+  callee : Value,
+  this_value : Value,
+  arg0 : Value,
+  arg1 : Value,
+) -> Value raise {
+  call_value_with_this_twoargs(callee, this_value, arg0, arg1)
+}
+
+///|
 let bytecode_class_eval_ref : Ref[Bool] = Ref::new(false)
 
 ///|
@@ -870,10 +880,13 @@ fn bytecode_jump_target(code : Array[BytecodeInstr], target : Int) -> Int raise 
 }
 
 ///|
-fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
+fn bytecode_exec_with_state(
+  env : Env,
+  state : BytecodeExecState,
+) -> Value raise {
   with_bytecode_class_eval(fn() raise {
-    let state = bytecode_exec_state_new(env, func)
     with_current_bytecode_state_value(state, fn() raise {
+      let func = state.func
       let mut env = env
       let stack = state.stack
       let target_stack = state.target_stack
@@ -1754,15 +1767,27 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
             }
             BytecodeOp::Call => {
               let argc = if value < 0 { 0 } else { value }
-              let argv : Array[Value] = Array::make(argc, Undefined)
-              let mut i = 0
-              while i < argc {
-                let index = argc - 1 - i
-                argv[index] = bytecode_stack_pop(stack)
-                i = i + 1
+              if argc == 2 {
+                let arg1 = bytecode_stack_pop(stack)
+                let arg0 = bytecode_stack_pop(stack)
+                let callee = bytecode_stack_pop(stack)
+                stack.push(call_value_with_this_twoargs(
+                  callee,
+                  Undefined,
+                  arg0,
+                  arg1,
+                ))
+              } else {
+                let argv : Array[Value] = Array::make(argc, Undefined)
+                let mut i = 0
+                while i < argc {
+                  let index = argc - 1 - i
+                  argv[index] = bytecode_stack_pop(stack)
+                  i = i + 1
+                }
+                let callee = bytecode_stack_pop(stack)
+                stack.push(call_value(callee, argv))
               }
-              let callee = bytecode_stack_pop(stack)
-              stack.push(call_value(callee, argv))
             }
             BytecodeOp::CallWithThis => {
               let argc = if value < 0 { 0 } else { value }
@@ -1776,6 +1801,14 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
                 let this_value = bytecode_stack_pop(stack)
                 stack.push(
                   bytecode_call_with_this_onearg(callee, this_value, arg),
+                )
+              } else if argc == 2 {
+                let arg1 = bytecode_stack_pop(stack)
+                let arg0 = bytecode_stack_pop(stack)
+                let callee = bytecode_stack_pop(stack)
+                let this_value = bytecode_stack_pop(stack)
+                stack.push(
+                  bytecode_call_with_this_twoarg(callee, this_value, arg0, arg1),
                 )
               } else {
                 let argv : Array[Value] = Array::make(argc, Undefined)
@@ -2953,9 +2986,15 @@ fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
       raise err
     }
   }
-  result
+      result
+    })
   })
-  })
+}
+
+///|
+fn bytecode_exec(env : Env, func : BytecodeFunction) -> Value raise {
+  let state = bytecode_exec_state_new(env, func)
+  bytecode_exec_with_state(env, state)
 }
 
 ///|
@@ -3099,6 +3138,116 @@ fn bytecode_exec_state_new(env : Env, func : BytecodeFunction) -> BytecodeExecSt
     pc: 0,
     resume_pending: false,
     finally_body_depth: 0,
+  }
+}
+
+///|
+fn bytecode_exec_state_reset(state : BytecodeExecState, env : Env) -> Unit {
+  bytecode_exec_pop_envs(state.env_stack)
+  state.stack.clear()
+  state.target_stack.clear()
+  state.binding_stack.clear()
+  state.for_in_stack.clear()
+  state.for_of_stack.clear()
+  state.finally_stack.clear()
+  state.try_stack.clear()
+  state.env_stack.clear()
+  state.pc = 0
+  state.resume_pending = false
+  state.finally_body_depth = 0
+  state.env = env
+}
+
+///|
+priv struct BytecodeExecCacheEntry {
+  state : BytecodeExecState
+  mut busy : Bool
+}
+
+///|
+let bytecode_exec_cache_ref : Ref[Map[Int, BytecodeExecCacheEntry]] = Ref::new(
+  Map::new(),
+)
+
+///|
+fn bytecode_exec_cache_remove(id : Int) -> Unit {
+  bytecode_exec_cache_ref.update(fn(cache) {
+    let _ = cache.remove(id)
+    cache
+  })
+}
+
+///|
+fn bytecode_exec_cached(
+  env : Env,
+  func : BytecodeFunction,
+  cache_id : Int,
+) -> Value raise {
+  let mut entry_opt : BytecodeExecCacheEntry? = None
+  bytecode_exec_cache_ref.update(fn(cache) {
+    entry_opt = cache.get(cache_id)
+    cache
+  })
+  match entry_opt {
+    Some(entry) => {
+      if entry.busy {
+        return bytecode_exec(env, func)
+      }
+      entry.busy = true
+      bytecode_exec_state_reset(entry.state, env)
+      bytecode_exec_cache_ref.update(fn(cache) {
+        cache.set(cache_id, entry)
+        cache
+      })
+      try {
+        let result = bytecode_exec_with_state(env, entry.state)
+        bytecode_exec_state_reset(entry.state, env)
+        entry.busy = false
+        bytecode_exec_cache_ref.update(fn(cache) {
+          cache.set(cache_id, entry)
+          cache
+        })
+        result
+      } catch {
+        err => {
+          bytecode_exec_state_reset(entry.state, env)
+          entry.busy = false
+          bytecode_exec_cache_ref.update(fn(cache) {
+            cache.set(cache_id, entry)
+            cache
+          })
+          raise err
+        }
+      }
+    }
+    None => {
+      let state = bytecode_exec_state_new(env, func)
+      let entry = BytecodeExecCacheEntry::{ state, busy: true }
+      bytecode_exec_cache_ref.update(fn(cache) {
+        cache.set(cache_id, entry)
+        cache
+      })
+      try {
+        let result = bytecode_exec_with_state(env, entry.state)
+        bytecode_exec_state_reset(entry.state, env)
+        entry.busy = false
+        bytecode_exec_cache_ref.update(fn(cache) {
+          cache.set(cache_id, entry)
+          cache
+        })
+        result
+      } catch {
+        err => {
+          bytecode_exec_state_reset(entry.state, env)
+          entry.busy = false
+          bytecode_exec_cache_ref.update(fn(cache) {
+            cache.set(cache_id, entry)
+            cache
+          })
+          raise err
+        }
+      }
+    }
   }
 }
 
@@ -4317,15 +4466,27 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
               }
               BytecodeOp::Call => {
                 let argc = if value < 0 { 0 } else { value }
-                let argv : Array[Value] = Array::make(argc, Undefined)
-                let mut i = 0
-                while i < argc {
-                  let index = argc - 1 - i
-                  argv[index] = bytecode_stack_pop(stack)
-                  i = i + 1
+                if argc == 2 {
+                  let arg1 = bytecode_stack_pop(stack)
+                  let arg0 = bytecode_stack_pop(stack)
+                  let callee = bytecode_stack_pop(stack)
+                  stack.push(call_value_with_this_twoargs(
+                    callee,
+                    Undefined,
+                    arg0,
+                    arg1,
+                  ))
+                } else {
+                  let argv : Array[Value] = Array::make(argc, Undefined)
+                  let mut i = 0
+                  while i < argc {
+                    let index = argc - 1 - i
+                    argv[index] = bytecode_stack_pop(stack)
+                    i = i + 1
+                  }
+                  let callee = bytecode_stack_pop(stack)
+                  stack.push(call_value(callee, argv))
                 }
-                let callee = bytecode_stack_pop(stack)
-                stack.push(call_value(callee, argv))
               }
               BytecodeOp::CallWithThis => {
                 let argc = if value < 0 { 0 } else { value }
@@ -4339,6 +4500,14 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
                   let this_value = bytecode_stack_pop(stack)
                   stack.push(
                     bytecode_call_with_this_onearg(callee, this_value, arg),
+                  )
+                } else if argc == 2 {
+                  let arg1 = bytecode_stack_pop(stack)
+                  let arg0 = bytecode_stack_pop(stack)
+                  let callee = bytecode_stack_pop(stack)
+                  let this_value = bytecode_stack_pop(stack)
+                  stack.push(
+                    bytecode_call_with_this_twoarg(callee, this_value, arg0, arg1),
                   )
                 } else {
                   let argv : Array[Value] = Array::make(argc, Undefined)

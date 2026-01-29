@@ -25,11 +25,8 @@ fn array_sort_compare(
       if strict_eq(left_value, right_value) {
         cmp = 0
       } else {
-        let res = call_value_with_this(
-          func,
-          [left_value, right_value],
-          Undefined,
-        )
+        let res =
+          call_value_with_this_twoargs(func, Undefined, left_value, right_value)
         let num = to_number(res)
         if Double::is_nan(num) {
           cmp = 0
@@ -74,25 +71,37 @@ fn array_sort_slots(
   slots : Array[ArraySortSlot],
   compare_fn : Value?,
 ) -> Unit raise {
-  let len = slots.length()
-  if len < 2 {
-    return
-  }
-  let mut i = 1
-  while i < len {
-    let mut j = i
-    while j > 0 {
-      let cmp = array_sort_compare(slots, j - 1, j, compare_fn)
-      if cmp <= 0 {
-        break
-      }
-      let tmp = slots[j - 1]
-      slots[j - 1] = slots[j]
-      slots[j] = tmp
-      j = j - 1
+  let _ = with_gc_frame(fn() raise {
+    for slot in slots {
+      let _ = gc_root_push(slot.value)
     }
-    i = i + 1
-  }
+    let len = slots.length()
+    if len < 2 {
+      return Undefined
+    }
+    let mut gc_tick = 0
+    let mut i = 1
+    while i < len {
+      let mut j = i
+      while j > 0 {
+        gc_tick = gc_tick + 1
+        if Int::land(gc_tick, 1023) == 0 && gc_is_pending() {
+          gc_maybe_collect()
+        }
+        let cmp = array_sort_compare(slots, j - 1, j, compare_fn)
+        if cmp <= 0 {
+          break
+        }
+        let tmp = slots[j - 1]
+        slots[j - 1] = slots[j]
+        slots[j] = tmp
+        j = j - 1
+      }
+      i = i + 1
+    }
+    Undefined
+  })
+  ()
 }
 
 ///|

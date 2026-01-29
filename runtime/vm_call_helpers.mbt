@@ -413,6 +413,232 @@ fn call_user_function_with_this(
 }
 
 ///|
+fn call_user_function_with_this_twoargs_arrow_simple_cached(
+  func : FunctionValue,
+  arg0 : Value,
+  arg1 : Value,
+) -> Value? raise {
+  if !fast_arrow_twoargs_ok(func) {
+    return None
+  }
+  if func.cached_param_env_busy {
+    return None
+  }
+  let mut reused = false
+  let frame = match func.cached_param_env {
+    Some(env) => {
+      reused = true
+      env
+    }
+    None => {
+      let env = Env::new(Some(func.env))
+      env.var_env = Some(env)
+      env.strict = func.is_strict
+      match func.name {
+        Some(name) =>
+          if func.local_name_binding {
+            env_define_readonly(env, name, Value::Function(func), false)
+          }
+        None => ()
+      }
+      func.cached_param_env = Some(env)
+      rc_incref_env(env)
+      env
+    }
+  }
+  func.cached_param_env_busy = true
+  try {
+    let result = with_env_value(frame, fn() raise {
+      let mut i = 0
+      while i < func.params.length() {
+        let value = if i == 0 {
+          arg0
+        } else if i == 1 {
+          arg1
+        } else {
+          Undefined
+        }
+        assign_var_binding(frame, func.params[i].binding, value, false)
+        i = i + 1
+      }
+      let value = with_current_function(func, fn() raise {
+        try {
+          let bytecode = bytecode_compile_function_body(func)
+          match bytecode {
+            Some(code) => bytecode_exec_cached(frame, code, func.id)
+            None => {
+              let _ = throw_type_error("bytecode compile failed")
+              Undefined
+            }
+          }
+        } catch {
+          ReturnSignal(value) => value
+          BreakSignal((_, _)) => fail("illegal break")
+          ContinueSignal((_, _)) => fail("illegal continue")
+          ThrowSignal(value) => raise ThrowSignal(value)
+          err => raise err
+        }
+      })
+      let mut j = 0
+      while j < func.params.length() {
+        assign_var_binding(frame, func.params[j].binding, Undefined, false)
+        j = j + 1
+      }
+      value
+    })
+    func.cached_param_env_busy = false
+    Some(result)
+  } catch {
+    err => {
+      try {
+        let _ = with_env_value(frame, fn() raise {
+          let mut k = 0
+          while k < func.params.length() {
+            assign_var_binding(frame, func.params[k].binding, Undefined, false)
+            k = k + 1
+          }
+          Undefined
+        })
+      } catch { _ => () }
+      func.cached_param_env_busy = false
+      raise err
+    }
+  }
+}
+
+///|
+fn call_user_function_with_this_twoargs_arrow_simple_slow(
+  func : FunctionValue,
+  arg0 : Value,
+  arg1 : Value,
+) -> Value raise {
+  let frame = Env::new(Some(func.env))
+  frame.var_env = Some(frame)
+  frame.strict = func.is_strict
+  match func.name {
+    Some(name) =>
+      if func.local_name_binding {
+        env_define_readonly(frame, name, Value::Function(func), false)
+      }
+    None => ()
+  }
+  let _ = with_env_value(frame, fn() raise {
+    let mut i = 0
+    while i < func.params.length() {
+      let value = if i == 0 {
+        arg0
+      } else if i == 1 {
+        arg1
+      } else {
+        Undefined
+      }
+      assign_var_binding(frame, func.params[i].binding, value, false)
+      i = i + 1
+    }
+    Undefined
+  })
+  with_current_function(func, fn() raise {
+    let body_env = prepare_function_body_env(frame, func)
+    let top_level_func_decls = collect_top_level_function_decls(func.body)
+    let func_var_names = compute_annex_b_var_func_decls(
+      func.body,
+      body_env.strict,
+      annex_b_param_names_for_func(func),
+      false,
+    )
+    with_top_level_function_decls(top_level_func_decls, fn() raise {
+      with_annex_b_var_func_decls(func_var_names, fn() raise {
+        hoist_decls(body_env, func.body, false, false)
+        with_env_value(body_env, fn() raise {
+          try {
+            let bytecode = bytecode_compile_function_body(func)
+            match bytecode {
+              Some(code) => bytecode_exec(body_env, code)
+              None => {
+                let _ = throw_type_error("bytecode compile failed")
+                Undefined
+              }
+            }
+          } catch {
+            ReturnSignal(value) => value
+            BreakSignal((_, _)) => fail("illegal break")
+            ContinueSignal((_, _)) => fail("illegal continue")
+            ThrowSignal(value) => raise ThrowSignal(value)
+            err => raise err
+          }
+        })
+      })
+    })
+  })
+}
+
+///|
+fn call_user_function_with_this_twoargs_arrow_simple(
+  func : FunctionValue,
+  arg0 : Value,
+  arg1 : Value,
+) -> Value raise {
+  match call_user_function_with_this_twoargs_arrow_simple_cached(func, arg0, arg1) {
+    Some(value) => value
+    None => call_user_function_with_this_twoargs_arrow_simple_slow(func, arg0, arg1)
+  }
+}
+
+///|
+fn call_user_function_with_this_twoargs(
+  func : FunctionValue,
+  arg0 : Value,
+  arg1 : Value,
+  this_value : Value,
+  new_target : Value,
+) -> Value raise {
+  if func.is_class_constructor && new_target is Undefined {
+    return with_env_value(func.env, fn() raise {
+      throw_type_error("class constructor cannot be invoked without 'new'")
+    })
+  }
+  if func.is_generator || func.is_async {
+    return call_user_function_with_this(func, [arg0, arg1], this_value, new_target)
+  }
+  if func.is_arrow &&
+    has_simple_parameter_list(func) &&
+    !has_param_expressions(func) {
+    return call_user_function_with_this_twoargs_arrow_simple(func, arg0, arg1)
+  }
+  call_user_function_with_this(func, [arg0, arg1], this_value, new_target)
+}
+
+///|
+fn call_value_with_this_twoargs(
+  value : Value,
+  this_value : Value,
+  arg0 : Value,
+  arg1 : Value,
+  new_target? : Value = Undefined,
+) -> Value raise {
+  match value {
+    Function(func) =>
+      call_user_function_with_this_twoargs(func, arg0, arg1, this_value, new_target)
+    BoundFunction(bound) => {
+      let final_args : Array[Value] = []
+      for value in bound.bound_args {
+        final_args.push(value)
+      }
+      final_args.push(arg0)
+      final_args.push(arg1)
+      call_value_with_this(bound.target, final_args, bound.bound_this, new_target~)
+    }
+    Builtin(_) => call_value_with_this(value, [arg0, arg1], this_value)
+    Object(obj) =>
+      match obj.proxy_data {
+        Some(data) => proxy_apply_value(data, this_value, [arg0, arg1])
+        None => throw_type_error("not a function")
+      }
+    _ => throw_type_error("not a function")
+  }
+}
+
+///|
 fn call_async_function(
   func : FunctionValue,
   args : Array[Value],

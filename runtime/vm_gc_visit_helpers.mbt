@@ -296,6 +296,10 @@ fn gc_visit_function_children(
   gc_visit_props(func.props, visit_value)
   gc_visit_props(func.private_instance_props, visit_value)
   visit_env(func.env)
+  match func.cached_param_env {
+    Some(env) => visit_env(env)
+    None => ()
+  }
   match func.super_constructor {
     Some(value) => visit_value(value)
     None => ()

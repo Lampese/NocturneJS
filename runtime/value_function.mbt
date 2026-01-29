@@ -19,6 +19,9 @@ pub struct FunctionValue {
   param_inits : Array[@engine.Expr?]
   body : Array[@engine.Stmt]
   env : Env
+  mut cached_param_env : Env?
+  mut cached_param_env_busy : Bool
+  mut fast_arrow_twoargs_cache : Bool?
   id : Int
   props : Props
   mut proto : Value?
