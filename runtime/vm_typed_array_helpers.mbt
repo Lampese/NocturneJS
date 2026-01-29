@@ -132,11 +132,27 @@ fn new_typed_array_from_array(
     Array(target) =>
       match target.typed_array_data {
         Some(data) => {
+          let fast_path = match arr.typed_array_data {
+            Some(_) => false
+            None => array_can_fast_index_get(arr)
+          }
           let mut i = 0
           while i < length {
             let element = match arr.typed_array_data {
               Some(src_data) => typed_array_get_index(src_data, i)
-              None => property_get(source_value, Int::to_string(i))
+              None =>
+                if fast_path {
+                  if i < arr.elements.length() {
+                    match arr.elements[i] {
+                      Some(value) => value
+                      None => Undefined
+                    }
+                  } else {
+                    Undefined
+                  }
+                } else {
+                  property_get(source_value, Int::to_string(i))
+                }
             }
             let _ = typed_array_set_index(data, i, element)
             i = i + 1
@@ -147,6 +163,239 @@ fn new_typed_array_from_array(
     _ => ()
   }
   value
+}
+
+///|
+fn new_typed_array_from_values(
+  kind : TypedArrayKind,
+  values : Array[Value],
+  proto : Value?,
+  buffer_proto : Value?,
+) -> Value raise {
+  let length = values.length()
+  let value = new_typed_array_value(kind, length, proto~, buffer_proto~)
+  match value {
+    Array(target) =>
+      match target.typed_array_data {
+        Some(data) => {
+          let mut i = 0
+          while i < length {
+            let _ = typed_array_set_index(data, i, values[i])
+            i = i + 1
+          }
+        }
+        None => ()
+      }
+    _ => ()
+  }
+  value
+}
+
+///|
+fn new_typed_array_from_array_like_value(
+  kind : TypedArrayKind,
+  source_value : Value,
+  proto : Value?,
+  buffer_proto : Value?,
+) -> Value raise {
+  let len64 = array_like_length_int64(source_value)
+  let bpe = typed_array_bytes_per_element(kind)
+  let max_int = 2147483647
+  let max_len = max_int / bpe
+  if len64 > Int64::from_int(max_len) {
+    return throw_range_error("invalid array buffer length")
+  }
+  let length = if len64 > Int64::from_int(max_int) {
+    max_int
+  } else {
+    Int64::to_int(len64)
+  }
+  let value = new_typed_array_value(kind, length, proto~, buffer_proto~)
+  match value {
+    Array(target) =>
+      match target.typed_array_data {
+        Some(data) => {
+          let mut i = 0
+          while i < length {
+            let element = property_get(source_value, Int::to_string(i))
+            let _ = typed_array_set_index(data, i, element)
+            i = i + 1
+          }
+        }
+        None => ()
+      }
+    _ => ()
+  }
+  value
+}
+
+///|
+fn collect_iterator_values(
+  iterator : Value,
+  next_method : Value,
+) -> Array[Value] raise {
+  let values : Array[Value] = []
+  while true {
+    let (done, value) =
+      try iterator_step_value(iterator, next_method) catch {
+        err => {
+          iterator_close_on_error(iterator)
+          raise err
+        }
+      }
+    if done {
+      break
+    }
+    values.push(value)
+  }
+  values
+}
+
+///|
+fn collect_iterable_values(value : Value) -> Array[Value]? raise {
+  match fast_iterator_for_value(value) {
+    Some((iterator, next_method)) =>
+      return Some(collect_iterator_values(iterator, next_method))
+    None => ()
+  }
+  let obj = to_object(value)
+  let iter_method = match symbol_iterator_key() {
+    Some(key) => property_get(obj, key)
+    None => Undefined
+  }
+  match iter_method {
+    Undefined | Null => return None
+    _ =>
+      if !is_callable(iter_method) {
+        let _ = throw_type_error("value is not iterable")
+        return None
+      }
+  }
+  let iterator = call_value_with_this(iter_method, [], value)
+  if !is_object_like(iterator) {
+    let _ = throw_type_error("not an object")
+    return None
+  }
+  let next_method = property_get(iterator, "next")
+  if !is_callable(next_method) {
+    let _ = throw_type_error("not a function")
+    return None
+  }
+  Some(collect_iterator_values(iterator, next_method))
+}
+
+///|
+fn new_typed_array_from_object_like(
+  kind : TypedArrayKind,
+  source_value : Value,
+  proto : Value?,
+  buffer_proto : Value?,
+) -> Value raise {
+  match collect_iterable_values(source_value) {
+    Some(values) =>
+      new_typed_array_from_values(kind, values, proto, buffer_proto)
+    None =>
+      new_typed_array_from_array_like_value(
+        kind,
+        source_value,
+        proto,
+        buffer_proto,
+      )
+  }
+}
+
+///|
+fn props_has_index_props(props : Props) -> Bool {
+  let mut found = false
+  props_iter(props, fn(key, _) {
+    if !found {
+      match array_index_from_name(key) {
+        Some(_) => found = true
+        None => ()
+      }
+    }
+  })
+  found
+}
+
+///|
+fn array_elements_has_index(arr : ArrayValue) -> Bool {
+  for element in arr.elements {
+    match element {
+      Some(_) => return true
+      None => ()
+    }
+  }
+  false
+}
+
+///|
+fn proto_chain_has_index_props(proto : Value?) -> Bool {
+  let mut current = proto
+  while true {
+    match current {
+      Some(value) =>
+        match value {
+          Array(arr) => {
+            if arr.typed_array_data is Some(_) {
+              return true
+            }
+            if array_elements_has_index(arr) {
+              return true
+            }
+            if props_has_index_props(arr.props) {
+              return true
+            }
+            current = arr.proto
+          }
+          Object(obj) => {
+            if obj.proxy_data is Some(_) {
+              return true
+            }
+            if obj.string_data is Some(_) {
+              return true
+            }
+            if props_has_index_props(obj.props) {
+              return true
+            }
+            current = obj.proto
+          }
+          Function(func) => {
+            if props_has_index_props(func.props) {
+              return true
+            }
+            current = func.proto
+          }
+          BoundFunction(bound) => {
+            if props_has_index_props(bound.props) {
+              return true
+            }
+            current = bound.proto
+          }
+          Builtin(builtin) => {
+            if props_has_index_props(builtin.props) {
+              return true
+            }
+            current = builtin.proto
+          }
+          Arguments(_) => return true
+          _ => return true
+        }
+      None => return false
+    }
+  }
+  false
+}
+
+///|
+fn array_can_fast_index_get(arr : ArrayValue) -> Bool {
+  if props_has_index_props(arr.props) {
+    return false
+  }
+  if proto_chain_has_index_props(arr.proto) {
+    return false
+  }
+  true
 }
 
 ///|
@@ -283,14 +532,13 @@ fn new_typed_array_from_args(
       let proto = typed_array_proto_from_target(kind, target_value)
       match arr.typed_array_data {
         Some(_) => new_typed_array_from_array(kind, arr, proto, buffer_proto)
-        None => {
-          let source = array_from_value(Undefined, [Array(arr)])
-          match source {
-            Array(source_arr) =>
-              new_typed_array_from_array(kind, source_arr, proto, buffer_proto)
-            _ => new_typed_array_value(kind, 0, proto~, buffer_proto~)
-          }
-        }
+        None =>
+          new_typed_array_from_object_like(
+            kind,
+            Array(arr),
+            proto,
+            buffer_proto,
+          )
       }
     }
     Object(obj) =>
@@ -312,22 +560,22 @@ fn new_typed_array_from_args(
         }
         None => {
           let proto = typed_array_proto_from_target(kind, target_value)
-          let source = array_from_value(Undefined, [Object(obj)])
-          match source {
-            Array(source_arr) =>
-              new_typed_array_from_array(kind, source_arr, proto, buffer_proto)
-            _ => new_typed_array_value(kind, 0, proto~, buffer_proto~)
-          }
+          new_typed_array_from_object_like(
+            kind,
+            Object(obj),
+            proto,
+            buffer_proto,
+          )
         }
       }
     _ if is_object_like(args[0]) => {
       let proto = typed_array_proto_from_target(kind, target_value)
-      let source = array_from_value(Undefined, [args[0]])
-      match source {
-        Array(source_arr) =>
-          new_typed_array_from_array(kind, source_arr, proto, buffer_proto)
-        _ => new_typed_array_value(kind, 0, proto~, buffer_proto~)
-      }
+      new_typed_array_from_object_like(
+        kind,
+        args[0],
+        proto,
+        buffer_proto,
+      )
     }
     _ => {
       let len64 = to_index_int64(args[0])
