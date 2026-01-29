@@ -1273,26 +1273,64 @@ fn bytecode_exec_with_state(
               let key_value = bytecode_stack_pop(stack)
               let target = bytecode_stack_pop(stack)
               match array_index_from_key_value(key_value) {
-                Some((_, name)) =>
+                Some((index, name)) =>
                   match target {
-                    Array(_) =>
-                      stack.push(
-                        set_property_for_value(
-                          target,
-                          name,
-                          value,
-                          env.strict,
-                        ),
-                      )
-                    Arguments(_) =>
-                      stack.push(
-                        set_property_for_value(
-                          target,
-                          name,
-                          value,
-                          env.strict,
-                        ),
-                      )
+                    Array(arr) =>
+                      match arr.typed_array_data {
+                        Some(data) => {
+                          let max_int = 2147483647
+                          if index <= Int64::from_int(max_int) {
+                            let elem_index = Int64::to_int(index)
+                            let _ = typed_array_set_index(data, elem_index, value)
+                            stack.push(value)
+                          } else {
+                            stack.push(
+                              set_property_for_value(
+                                target,
+                                name,
+                                value,
+                                env.strict,
+                              ),
+                            )
+                          }
+                        }
+                        None =>
+                          match array_set_index_fast(arr, index, value) {
+                            Some(ok) => {
+                              if !ok && env.strict {
+                                let _ = throw_type_error("cannot set property")
+                              }
+                              stack.push(value)
+                            }
+                            None =>
+                              stack.push(
+                                set_property_for_value(
+                                  target,
+                                  name,
+                                  value,
+                                  env.strict,
+                                ),
+                              )
+                          }
+                      }
+                    Arguments(args) =>
+                      match arguments_set_index_fast(args, index, value) {
+                        Some(ok) => {
+                          if !ok && env.strict {
+                            let _ = throw_type_error("cannot set property")
+                          }
+                          stack.push(value)
+                        }
+                        None =>
+                          stack.push(
+                            set_property_for_value(
+                              target,
+                              name,
+                              value,
+                              env.strict,
+                            ),
+                          )
+                      }
                     _ => {
                       let _ = to_object(target)
                       let name = property_key_name(key_value)
@@ -3767,26 +3805,70 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
                 let key_value = bytecode_stack_pop(stack)
                 let target = bytecode_stack_pop(stack)
                 match array_index_from_key_value(key_value) {
-                  Some((_, name)) =>
+                  Some((index, name)) =>
                     match target {
-                      Array(_) =>
-                        stack.push(
-                          set_property_for_value(
-                            target,
-                            name,
-                            value,
-                            env.strict,
-                          ),
-                        )
-                      Arguments(_) =>
-                        stack.push(
-                          set_property_for_value(
-                            target,
-                            name,
-                            value,
-                            env.strict,
-                          ),
-                        )
+                      Array(arr) =>
+                        match arr.typed_array_data {
+                          Some(data) => {
+                            let max_int = 2147483647
+                            if index <= Int64::from_int(max_int) {
+                              let elem_index = Int64::to_int(index)
+                              let _ = typed_array_set_index(
+                                data,
+                                elem_index,
+                                value,
+                              )
+                              stack.push(value)
+                            } else {
+                              stack.push(
+                                set_property_for_value(
+                                  target,
+                                  name,
+                                  value,
+                                  env.strict,
+                                ),
+                              )
+                            }
+                          }
+                          None =>
+                            match array_set_index_fast(arr, index, value) {
+                              Some(ok) => {
+                                if !ok && env.strict {
+                                  let _ = throw_type_error(
+                                    "cannot set property",
+                                  )
+                                }
+                                stack.push(value)
+                              }
+                              None =>
+                                stack.push(
+                                  set_property_for_value(
+                                    target,
+                                    name,
+                                    value,
+                                    env.strict,
+                                  ),
+                                )
+                            }
+                        }
+                      Arguments(args) =>
+                        match arguments_set_index_fast(args, index, value) {
+                          Some(ok) => {
+                            if !ok && env.strict {
+                              let _ = throw_type_error("cannot set property")
+                            }
+                            stack.push(value)
+                          }
+                          None =>
+                            stack.push(
+                              set_property_for_value(
+                                target,
+                                name,
+                                value,
+                                env.strict,
+                              ),
+                            )
+                        }
                       _ => {
                         let _ = to_object(target)
                         let name = property_key_name(key_value)

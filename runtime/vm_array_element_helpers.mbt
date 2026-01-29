@@ -166,3 +166,80 @@ fn arguments_get_with_receiver(
       }
   }
 }
+
+///|
+fn array_set_index_fast(
+  arr : ArrayValue,
+  index64 : Int64,
+  value : Value,
+) -> Bool? raise {
+  let max_dense_index = 2147483646
+  if index64 < 0L || index64 > Int64::from_int(max_dense_index) {
+    return None
+  }
+  if !array_can_fast_index_get(arr) {
+    return None
+  }
+  let current_len = array_length_from_props(arr)
+  match props_get(arr.props, "length") {
+    Some(prop) =>
+      if !prop.writable && index64 >= current_len {
+        return Some(false)
+      }
+    None => ()
+  }
+  let index = Int64::to_int(index64)
+  let elements_len = arr.elements.length()
+  if index > elements_len {
+    return None
+  }
+  if !arr.extensible {
+    if index >= elements_len {
+      return Some(false)
+    }
+    match arr.elements[index] {
+      Some(_) => ()
+      None => return Some(false)
+    }
+  }
+  if index < elements_len {
+    rc_replace_optional_value(arr.elements[index], Some(value))
+    arr.elements[index] = Some(value)
+  } else {
+    while arr.elements.length() < index {
+      arr.elements.push(None)
+    }
+    rc_incref_value(value)
+    arr.elements.push(Some(value))
+  }
+  let elem_len = Int64::from_int(arr.elements.length())
+  let new_len = if elem_len > current_len { elem_len } else { current_len }
+  set_length_prop(arr.props, Number(Int64::to_double(new_len)))
+  Some(true)
+}
+
+///|
+fn arguments_set_index_fast(
+  args : ArgumentsValue,
+  index64 : Int64,
+  value : Value,
+) -> Bool? raise {
+  let max_int = 2147483647
+  if index64 < 0L || index64 > Int64::from_int(max_int) {
+    return None
+  }
+  if props_has_index_props(args.props) {
+    return None
+  }
+  if proto_chain_has_index_props(args.proto) {
+    return None
+  }
+  let index = Int64::to_int(index64)
+  if index >= args.elements.length() {
+    return None
+  }
+  if !args.extensible && !arguments_has_index(args, index) {
+    return Some(false)
+  }
+  Some(arguments_set_index(args, index, value))
+}
