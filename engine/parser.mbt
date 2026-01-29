@@ -493,7 +493,20 @@ fn parse_script_with_mode_private(
           let mut i = index
           while !is_eof(tokens, i) {
             let (stmt, next_i) = parse_statement(tokens, i, true, is_module)
-            body.push(stmt)
+            let mut skip = false
+            match stmt {
+              Empty =>
+                if body.length() > 0 {
+                  match body[body.length() - 1] {
+                    Empty => skip = true
+                    _ => ()
+                  }
+                }
+              _ => ()
+            }
+            if !skip {
+              body.push(stmt)
+            }
             i = next_i
           }
           (body, i)
@@ -3640,7 +3653,21 @@ fn parse_statement(
         parse_import(tokens, index)
       }
     KeywordExport => parse_export(tokens, index)
-    Punct('{') => parse_block(tokens, index)
+    Punct('{') =>
+      if match_punct(tokens, index + 1, '}') {
+        (Empty, index + 2)
+      } else {
+        let (stmt, next_i) = parse_block(tokens, index)
+        match stmt {
+          Block(stmts) =>
+            if stmts.length() == 0 {
+              (Empty, next_i)
+            } else {
+              (stmt, next_i)
+            }
+          _ => (stmt, next_i)
+        }
+      }
     Punct(';') => (Empty, index + 1)
     Ident =>
       if tok.lexeme == "await" && !await_ident_allowed() {
@@ -6324,7 +6351,20 @@ fn parse_block(tokens : Array[Token], index : Int) -> (Stmt, Int) raise {
   let mut i = index + 1
   while !match_punct(tokens, i, '}') && !is_eof(tokens, i) {
     let (stmt, next_i) = parse_statement(tokens, i, true, false)
-    stmts.push(stmt)
+    let mut skip = false
+    match stmt {
+      Empty =>
+        if stmts.length() > 0 {
+          match stmts[stmts.length() - 1] {
+            Empty => skip = true
+            _ => ()
+          }
+        }
+      _ => ()
+    }
+    if !skip {
+      stmts.push(stmt)
+    }
     i = next_i
   }
   if !match_punct(tokens, i, '}') {
