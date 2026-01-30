@@ -1,3 +1,6 @@
 {
-  "import": ["Lampese/nocturnejs/runtime"]
+  "import": [
+    "Lampese/nocturnejs/runtime",
+    "moonbitlang/core/bigint"
+  ]
 }

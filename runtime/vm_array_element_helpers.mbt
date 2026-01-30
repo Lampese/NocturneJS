@@ -172,7 +172,7 @@ fn array_set_index_fast(
   arr : ArrayValue,
   index64 : Int64,
   value : Value,
-) -> Bool? raise {
+) -> Bool? {
   let max_dense_index = 2147483646
   if index64 < 0L || index64 > Int64::from_int(max_dense_index) {
     return None

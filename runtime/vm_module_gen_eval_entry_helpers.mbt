@@ -1,23 +1,4 @@
 ///|
-fn gen_eval_module_body(
-  env : Env,
-  body : Array[@engine.Stmt],
-  result_value : Value,
-) -> GenStep raise {
-  gen_bind(gen_eval_stmt_seq(env, body, 0), fn(control) {
-    match control {
-      Normal(_) => Done(Normal(result_value))
-      Return(_) => Done(Throw(module_syntax_error_value(env, "illegal return")))
-      Break(_, _) =>
-        Done(Throw(module_syntax_error_value(env, "illegal break")))
-      Continue(_, _) =>
-        Done(Throw(module_syntax_error_value(env, "illegal continue")))
-      Throw(value) => Done(Throw(value))
-    }
-  })
-}
-
-///|
 fn module_eval_adjust_control(
   env : Env,
   result_value : Value,
@@ -164,7 +145,10 @@ fn module_async_eval(
     }
     None => {
       let _ = throw_type_error("bytecode compile failed")
-      fn(_ : GenResume) raise { Done(Normal(Undefined)) }
+      fn(_ : GenResume) raise {
+        let _ = throw_type_error("bytecode compile failed")
+        Done(Normal(Undefined))
+      }
     }
   }
   let gen_data = GeneratorData::{

@@ -125,13 +125,13 @@ fn set_fd_handle(fd : Int, handle : FdHandle?) -> Unit {
 
 ///|
 fn bytes_from_string(text : String) -> Array[Byte] {
-  @encoding/utf8.encode(text).to_array()
+  @utf8.encode(text).to_array()
 }
 
 ///|
 fn string_from_bytes(bytes : Array[Byte]) -> String {
   let data = Bytes::from_array(bytes[:])
-  @encoding/utf8.decode(data[:]) catch {
+  @utf8.decode(data[:]) catch {
     _ => ""
   }
 }

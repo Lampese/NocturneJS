@@ -1,1 +1,3 @@
-{}
+{
+  "import": ["moonbitlang/core/bigint", "moonbitlang/core/strconv"]
+}

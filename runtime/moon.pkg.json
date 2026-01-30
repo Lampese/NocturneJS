@@ -3,6 +3,13 @@
     "Lampese/nocturnejs/engine",
     "moonbitlang/x/fs",
     "moonbitlang/x/path",
-    "moonbitlang/x/json5"
+    "moonbitlang/x/json5",
+    "moonbitlang/core/env",
+    "moonbitlang/core/encoding/utf8",
+    "moonbitlang/core/strconv",
+    "moonbitlang/core/bigint",
+    "moonbitlang/core/math",
+    "moonbitlang/core/hashmap",
+    "moonbitlang/core/json"
   ]
 }

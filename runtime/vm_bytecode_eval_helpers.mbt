@@ -38,7 +38,7 @@ fn bytecode_get_prop_cached_props(
   props : Props,
   proto : Value?,
   name : String,
-) -> Value? raise {
+) -> Value? {
   match props.repr {
     PropsRepr::Shape(shape, slots) => {
       let shape_id = shape.id
@@ -206,7 +206,7 @@ fn bytecode_get_prop_cached(
   cache_index : Int,
   target : Value,
   name : String,
-) -> Value? raise {
+) -> Value? {
   match target {
     Object(obj) =>
       if obj.proxy_data is None &&
@@ -660,7 +660,7 @@ fn gen_bytecode_eval_block(
         base_roots,
         state,
       )
-      gen_bind(step, fn(control) raise {
+      gen_bind_noraise(step, fn(control) {
         match control {
           Normal(value) => Done(Normal(value))
           Return(value) =>
@@ -901,7 +901,6 @@ fn bytecode_exec_with_state(
       let cpool = func.cpool
       let func_pool = func.func_pool
       let class_pool = func.class_pool
-      let chain_pool = func.optional_chain_pool
       let tagged_template_pool = func.tagged_template_pool
       let super_member_pool = func.super_member_pool
       let super_member_call_pool = func.super_member_call_pool
@@ -2112,30 +2111,15 @@ fn bytecode_exec_with_state(
               } else {
                 let _ = throw_type_error("invalid bytecode class")
               }
-            BytecodeOp::OptionalChain =>
-              if index >= 0 && index < chain_pool.length() {
-                let _ = chain_pool[index]
-                let _ =
-                  throw_type_error("unexpected bytecode optional chain opcode")
-              } else {
-                let _ = throw_type_error("invalid bytecode optional chain")
-              }
-            BytecodeOp::OptionalChainCallRef =>
-              if index >= 0 && index < chain_pool.length() {
-                let _ = chain_pool[index]
-                let _ =
-                  throw_type_error("unexpected bytecode optional chain opcode")
-              } else {
-                let _ = throw_type_error("invalid bytecode optional chain")
-              }
-            BytecodeOp::DeleteOptionalChain =>
-              if index >= 0 && index < chain_pool.length() {
-                let _ = chain_pool[index]
-                let _ =
-                  throw_type_error("unexpected bytecode optional chain opcode")
-              } else {
-                let _ = throw_type_error("invalid bytecode optional chain")
-              }
+            BytecodeOp::OptionalChain => {
+              let _ = throw_type_error("unexpected bytecode optional chain opcode")
+            }
+            BytecodeOp::OptionalChainCallRef => {
+              let _ = throw_type_error("unexpected bytecode optional chain opcode")
+            }
+            BytecodeOp::DeleteOptionalChain => {
+              let _ = throw_type_error("unexpected bytecode optional chain opcode")
+            }
             BytecodeOp::TaggedTemplate =>
               if index >= 0 && index < tagged_template_pool.length() {
                 let def = tagged_template_pool[index]
@@ -3364,7 +3348,6 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
   let cpool = func.cpool
   let func_pool = func.func_pool
   let class_pool = func.class_pool
-  let chain_pool = func.optional_chain_pool
   let tagged_template_pool = func.tagged_template_pool
   let super_member_pool = func.super_member_pool
   let super_member_call_pool = func.super_member_call_pool
@@ -4872,30 +4855,15 @@ fn bytecode_exec_step(state : BytecodeExecState, resume_state : GenResume) -> Ge
                 } else {
                   let _ = throw_type_error("invalid bytecode class")
                 }
-              BytecodeOp::OptionalChain =>
-                if index >= 0 && index < chain_pool.length() {
-                  let _ = chain_pool[index]
-                  let _ =
-                    throw_type_error("unexpected bytecode optional chain opcode")
-                } else {
-                  let _ = throw_type_error("invalid bytecode optional chain")
-                }
-              BytecodeOp::OptionalChainCallRef =>
-                if index >= 0 && index < chain_pool.length() {
-                  let _ = chain_pool[index]
-                  let _ =
-                    throw_type_error("unexpected bytecode optional chain opcode")
-                } else {
-                  let _ = throw_type_error("invalid bytecode optional chain")
-                }
-              BytecodeOp::DeleteOptionalChain =>
-                if index >= 0 && index < chain_pool.length() {
-                  let _ = chain_pool[index]
-                  let _ =
-                    throw_type_error("unexpected bytecode optional chain opcode")
-                } else {
-                  let _ = throw_type_error("invalid bytecode optional chain")
-                }
+              BytecodeOp::OptionalChain => {
+                let _ = throw_type_error("unexpected bytecode optional chain opcode")
+              }
+              BytecodeOp::OptionalChainCallRef => {
+                let _ = throw_type_error("unexpected bytecode optional chain opcode")
+              }
+              BytecodeOp::DeleteOptionalChain => {
+                let _ = throw_type_error("unexpected bytecode optional chain opcode")
+              }
               BytecodeOp::TaggedTemplate =>
                 if index >= 0 && index < tagged_template_pool.length() {
                   let def = tagged_template_pool[index]

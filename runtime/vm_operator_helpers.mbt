@@ -66,10 +66,6 @@ fn eval_unary_code(code : Int, value : Value) -> Value raise {
   }
 }
 
-fn eval_unary(op : @engine.UnaryOp, value : Value) -> Value raise {
-  eval_unary_code(bytecode_unary_op_code(op), value)
-}
-
 ///|
 fn eval_binary_code(code : Int, left : Value, right : Value) -> Value raise {
   match code {
@@ -259,14 +255,6 @@ fn eval_binary_code(code : Int, left : Value, right : Value) -> Value raise {
   }
 }
 
-fn eval_binary(
-  op : @engine.BinaryOp,
-  left : Value,
-  right : Value,
-) -> Value raise {
-  eval_binary_code(bytecode_binary_op_code(op), left, right)
-}
-
 ///|
 fn eval_add(left : Value, right : Value) -> Value raise {
   let mut l = left
@@ -359,28 +347,6 @@ fn eval_instanceof(left : Value, right : Value) -> Bool raise {
 }
 
 ///|
-fn update_values(op : @engine.UpdateOp, value : Value) -> (Value, Value) raise {
-  let is_inc = match op {
-    @engine.UpdateOp::Inc => true
-    @engine.UpdateOp::Dec => false
-  }
-  update_values_with_flags(is_inc, value)
-}
-
-///|
-fn update_result(
-  kind : @engine.UpdateKind,
-  old_value : Value,
-  new_value : Value,
-) -> Value {
-  let is_prefix = match kind {
-    @engine.UpdateKind::Prefix => true
-    @engine.UpdateKind::Postfix => false
-  }
-  update_result_with_flags(is_prefix, old_value, new_value)
-}
-
-///|
 fn update_values_with_flags(
   is_inc : Bool,
   value : Value,
@@ -406,145 +372,6 @@ fn update_result_with_flags(
   new_value : Value,
 ) -> Value {
   if is_prefix { new_value } else { old_value }
-}
-
-///|
-fn eval_update(
-  env : Env,
-  op : @engine.UpdateOp,
-  expr : @engine.Expr,
-  kind : @engine.UpdateKind,
-) -> Value raise {
-  match unwrap_paren(expr) {
-    Ident(name, _) => {
-      let target = resolve_binding_target(env, name)
-      let current = get_binding_value_from_target(env, name, target, env.strict)
-      let (old_value, new_value) = update_values(op, current)
-      assign_binding_value_to_target(env, name, target, new_value, env.strict)
-      update_result(kind, old_value, new_value)
-    }
-    Member(obj_expr, key, _) =>
-      match obj_expr {
-        @engine.Expr::Super =>
-          match key {
-            @engine.MemberKey::Private(_) =>
-              throw_syntax_error("private class field forbidden after super")
-            @engine.MemberKey::Computed(expr) => {
-              let (base, receiver) = super_base_and_receiver(env)
-              let key_value = eval_expr(env, expr)
-              let name = property_key_name(key_value)
-              let base_obj = to_object(base)
-              let current = property_get_with_receiver(base_obj, name, receiver)
-              let (old_value, new_value) = update_values(op, current)
-              super_set_property(env, base, receiver, name, new_value)
-              update_result(kind, old_value, new_value)
-            }
-            _ => {
-              let (base, receiver) = super_base_and_receiver(env)
-              let name = member_key_name(env, key)
-              let base_obj = to_object(base)
-              let current = property_get_with_receiver(base_obj, name, receiver)
-              let (old_value, new_value) = update_values(op, current)
-              super_set_property(env, base, receiver, name, new_value)
-              update_result(kind, old_value, new_value)
-            }
-          }
-        _ =>
-          match key {
-            @engine.MemberKey::Private(name) => {
-              let target = eval_expr(env, obj_expr)
-              let key_name = env_private_key_checked(env, name)
-              let current = private_property_get(target, key_name, name)
-              let (old_value, new_value) = update_values(op, current)
-              private_property_set(target, key_name, name, new_value)
-              update_result(kind, old_value, new_value)
-            }
-            @engine.MemberKey::Computed(expr) => {
-              let target_value = eval_expr(env, obj_expr)
-              let key_value = eval_expr(env, expr)
-              let target_obj = to_object(target_value)
-              let name = property_key_name(key_value)
-              let current = property_get_with_receiver(
-                target_obj, name, target_value,
-              )
-              let (old_value, new_value) = update_values(op, current)
-              let _ = set_property_for_value(
-                target_value,
-                name,
-                new_value,
-                env.strict,
-              )
-              update_result(kind, old_value, new_value)
-            }
-            _ => {
-              let target_value = eval_expr(env, obj_expr)
-              let name = member_key_name(env, key)
-              let target_obj = to_object(target_value)
-              let current = property_get_with_receiver(
-                target_obj, name, target_value,
-              )
-              let (old_value, new_value) = update_values(op, current)
-              let _ = set_property_for_value(
-                target_value,
-                name,
-                new_value,
-                env.strict,
-              )
-              update_result(kind, old_value, new_value)
-            }
-          }
-      }
-    Call(_, _, _) =>
-      if !env.strict {
-        let _ = eval_expr(env, expr)
-        throw_reference_error("invalid update target")
-      } else {
-        fail("invalid update target")
-      }
-    _ => fail("invalid update target")
-  }
-}
-
-///|
-fn eval_delete(env : Env, expr : @engine.Expr) -> Value raise {
-  match unwrap_paren(expr) {
-    Ident(name, _) => delete_ident(env, name, env.strict)
-    Member(_, @engine.MemberKey::Private(_), _) =>
-      throw_syntax_error("cannot delete a private class field")
-    Member(@engine.Expr::Super, key, _) =>
-      match key {
-        @engine.MemberKey::Private(_) =>
-          throw_syntax_error("cannot delete a private class field")
-        @engine.MemberKey::Computed(expr) => {
-          let _ = super_base_and_receiver(env)
-          let _ = eval_expr(env, expr)
-          throw_reference_error("unsupported reference to 'super'")
-        }
-        _ => {
-          let _ = super_base_and_receiver(env)
-          throw_reference_error("unsupported reference to 'super'")
-        }
-      }
-    Member(obj_expr, key, _) => {
-      let target = eval_expr(env, obj_expr)
-      let name = member_key_name(env, key)
-      delete_property(env, target, name)
-    }
-    OptionalChain(base, segments) => {
-      for segment in segments {
-        match segment {
-          @engine.ChainSegment::Member(@engine.MemberKey::Private(_), _, _) =>
-            return throw_syntax_error("cannot delete a private class field")
-          _ => ()
-        }
-      }
-      eval_delete_optional_chain(env, base, segments)
-    }
-    _ => {
-      let _ = eval_expr(env, expr)
-      Bool(true)
-    }
-  }
 }
 
 ///|
@@ -788,56 +615,4 @@ fn delete_property_or_throw(target : Value, name : String) -> Unit raise {
     let _ = throw_type_error("cannot delete property")
 
   }
-}
-
-///|
-fn eval_delete_optional_chain(
-  env : Env,
-  base : @engine.Expr,
-  segments : Array[@engine.ChainSegment],
-) -> Value raise {
-  if segments.is_empty() {
-    return Bool(true)
-  }
-  let mut current = eval_expr(env, base)
-  let mut this_value : Value? = None
-  for index, segment in segments {
-    let is_last = index == segments.length() - 1
-    match segment {
-      @engine.ChainSegment::Member(key, optional, offset) => {
-        if optional && is_nullish(current) {
-          return Bool(true)
-        }
-        if is_last {
-          let name = member_key_name(env, key)
-          return delete_property(env, current, name)
-        }
-        let next = with_expr_pos(offset, fn() raise {
-          let name = member_key_name(env, key)
-          let target = to_object(current)
-          property_get(target, name)
-        })
-        this_value = Some(current)
-        current = next
-      }
-      @engine.ChainSegment::Call(args, optional, offset) => {
-        if optional && is_nullish(current) {
-          return Bool(true)
-        }
-        let argv = eval_args(env, args)
-        let result = with_expr_pos(offset, fn() raise {
-          match this_value {
-            Some(this_obj) => call_value_with_this(current, argv, this_obj)
-            None => call_value(current, argv)
-          }
-        })
-        current = result
-        this_value = None
-        if is_last {
-          return Bool(true)
-        }
-      }
-    }
-  }
-  Bool(true)
 }

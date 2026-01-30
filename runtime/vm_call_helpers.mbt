@@ -253,9 +253,6 @@ fn call_user_function_body_impl(
                   }
                 }
               } catch {
-                ReturnSignal(value) => value
-                BreakSignal((_, _)) => fail("illegal break")
-                ContinueSignal((_, _)) => fail("illegal continue")
                 ThrowSignal(value) => raise ThrowSignal(value)
               err => raise err
             }
@@ -362,9 +359,6 @@ fn call_user_function_body_impl(
               }
             }
           } catch {
-            ReturnSignal(value) => value
-            BreakSignal((_, _)) => fail("illegal break")
-            ContinueSignal((_, _)) => fail("illegal continue")
             ThrowSignal(value) => raise ThrowSignal(value)
               err => raise err
             }
@@ -424,12 +418,8 @@ fn call_user_function_with_this_twoargs_arrow_simple_cached(
   if func.cached_param_env_busy {
     return None
   }
-  let mut reused = false
   let frame = match func.cached_param_env {
-    Some(env) => {
-      reused = true
-      env
-    }
+    Some(env) => env
     None => {
       let env = Env::new(Some(func.env))
       env.var_env = Some(env)
@@ -472,9 +462,6 @@ fn call_user_function_with_this_twoargs_arrow_simple_cached(
             }
           }
         } catch {
-          ReturnSignal(value) => value
-          BreakSignal((_, _)) => fail("illegal break")
-          ContinueSignal((_, _)) => fail("illegal continue")
           ThrowSignal(value) => raise ThrowSignal(value)
           err => raise err
         }
@@ -560,9 +547,6 @@ fn call_user_function_with_this_twoargs_arrow_simple_slow(
               }
             }
           } catch {
-            ReturnSignal(value) => value
-            BreakSignal((_, _)) => fail("illegal break")
-            ContinueSignal((_, _)) => fail("illegal continue")
             ThrowSignal(value) => raise ThrowSignal(value)
             err => raise err
           }
@@ -885,7 +869,10 @@ fn new_generator_value(
     }
     None => {
       let _ = throw_type_error("bytecode compile failed")
-      fn(_ : GenResume) raise { Done(Normal(Undefined)) }
+      fn(_ : GenResume) raise {
+        let _ = throw_type_error("bytecode compile failed")
+        Done(Normal(Undefined))
+      }
     }
   }
   let data = GeneratorData::{

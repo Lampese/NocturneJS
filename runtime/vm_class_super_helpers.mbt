@@ -79,38 +79,6 @@ fn super_set_property(
 }
 
 ///|
-fn eval_super_member(env : Env, key : @engine.MemberKey) -> Value raise {
-  match key {
-    @engine.MemberKey::Private(_) =>
-      return throw_syntax_error("private class field forbidden after super")
-    _ => ()
-  }
-  let (base, receiver) = super_base_and_receiver(env)
-  let name = member_key_name(env, key)
-  let base_obj = to_object(base)
-  property_get_with_receiver(base_obj, name, receiver)
-}
-
-///|
-fn eval_super_member_call(
-  env : Env,
-  key : @engine.MemberKey,
-  args : Array[@engine.Expr],
-) -> Value raise {
-  match key {
-    @engine.MemberKey::Private(_) =>
-      return throw_syntax_error("private class field forbidden after super")
-    _ => ()
-  }
-  let (base, receiver) = super_base_and_receiver(env)
-  let name = member_key_name(env, key)
-  let base_obj = to_object(base)
-  let callee = property_get_with_receiver(base_obj, name, receiver)
-  let argv = eval_args(env, args)
-  call_value_with_this(callee, argv, receiver)
-}
-
-///|
 fn resolve_super_constructor() -> Value raise {
   match current_super_function() {
     Some(func) =>
@@ -158,10 +126,4 @@ fn super_call_with_ctor(
     }
   }
   result
-}
-
-fn eval_super_call(env : Env, args : Array[@engine.Expr]) -> Value raise {
-  let super_ctor = resolve_super_constructor()
-  let argv = eval_args(env, args)
-  super_call_with_ctor(env, super_ctor, argv)
 }

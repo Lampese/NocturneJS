@@ -1,15 +1,4 @@
 ///|
-fn eval_new(
-  env : Env,
-  callee : @engine.Expr,
-  args : Array[@engine.Expr],
-) -> Value raise {
-  let ctor = eval_expr(env, callee)
-  let argv = eval_args(env, args)
-  call_constructor(ctor, argv)
-}
-
-///|
 fn constructor_proto_from_target(
   target : Value,
   fallback : Value?,

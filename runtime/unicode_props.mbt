@@ -84,45 +84,6 @@ fn ranges_invert(ranges : Array[Range]) -> Array[Range] {
 }
 
 ///|
-fn entry_matches(table : String, start : Int, end : Int, name : String) -> Bool {
-  let mut seg_start = start
-  let mut i = start
-  while i <= end {
-    if i == end || UInt16::to_int(table.code_unit_at(i)) == 44 { // ','
-      if i - seg_start == name.length() {
-        let seg = table.unsafe_substring(start=seg_start, end=i)
-        if seg == name {
-          return true
-        }
-      }
-      seg_start = i + 1
-    }
-    i = i + 1
-  }
-  false
-}
-
-///|
-fn unicode_find_name(table : String, name : String) -> Int? {
-  let len = table.length()
-  let mut pos = 0
-  let mut entry = 0
-  while pos < len {
-    let start = pos
-    while pos < len && UInt16::to_int(table.code_unit_at(pos)) != 0 {
-      pos = pos + 1
-    }
-    let end = pos
-    if entry_matches(table, start, end, name) {
-      return Some(entry)
-    }
-    pos = pos + 1
-    entry = entry + 1
-  }
-  None
-}
-
-///|
 let unicode_prop_name_map_ref : Ref[Map[String, Int]?] = Ref::new(None)
 
 ///|

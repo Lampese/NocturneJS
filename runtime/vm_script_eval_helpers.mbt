@@ -68,9 +68,6 @@ fn eval_script_with_strict(
               }
             }
           } catch {
-            ReturnSignal(_) => throw_syntax_error("illegal return")
-            BreakSignal((_, _)) => throw_syntax_error("illegal break")
-            ContinueSignal((_, _)) => throw_syntax_error("illegal continue")
             ThrowSignal(value) => raise ThrowSignal(value)
             err => raise err
           }

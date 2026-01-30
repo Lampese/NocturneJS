@@ -382,59 +382,6 @@ fn props_iter(props : Props, f : (String, Property) -> Unit) -> Unit {
 }
 
 ///|
-fn props_version(props : Props) -> Int {
-  props.version
-}
-
-///|
-fn props_shape_id(props : Props) -> Int? {
-  match props.repr {
-    PropsRepr::Shape(shape, _) => Some(shape.id)
-    _ => None
-  }
-}
-
-///|
-fn props_get_data_slot(
-  props : Props,
-  name : String,
-) -> (Int, Bool, Value)? {
-  match props.repr {
-    PropsRepr::Shape(shape, slots) =>
-      match shape.entry_map.get(name) {
-        Some(index) =>
-          if index >= 0 && index < slots.length() {
-            let entry = shape.entries[index]
-            match slots[index] {
-              PropSlot::Data(value) => Some((index, entry.writable, value))
-              _ => None
-            }
-          } else {
-            None
-          }
-        None => None
-      }
-    _ => None
-  }
-}
-
-///|
-fn props_get_data_slot_value(props : Props, index : Int) -> Value? {
-  match props.repr {
-    PropsRepr::Shape(_, slots) =>
-      if index >= 0 && index < slots.length() {
-        match slots[index] {
-          PropSlot::Data(value) => Some(value)
-          _ => None
-        }
-      } else {
-        None
-      }
-    _ => None
-  }
-}
-
-///|
 fn props_set_data_slot_value(
   props : Props,
   index : Int,

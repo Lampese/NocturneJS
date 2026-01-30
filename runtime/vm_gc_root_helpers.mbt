@@ -103,38 +103,6 @@ fn with_gc_frame(f : () -> Value raise) -> Value raise {
 }
 
 ///|
-fn with_gc_frame_values(f : () -> Array[Value] raise) -> Array[Value] raise {
-  let base = gc_root_depth()
-  try f() catch {
-    err => {
-      gc_root_pop_to(base)
-      raise err
-    }
-  } noraise {
-    result => {
-      gc_root_pop_to(base)
-      result
-    }
-  }
-}
-
-///|
-fn with_gc_frame_pair(f : () -> (Value, Value?) raise) -> (Value, Value?) raise {
-  let base = gc_root_depth()
-  try f() catch {
-    err => {
-      gc_root_pop_to(base)
-      raise err
-    }
-  } noraise {
-    result => {
-      gc_root_pop_to(base)
-      result
-    }
-  }
-}
-
-///|
 fn gc_maybe_collect() -> Unit {
   gc_request()
   let mut pending = false
@@ -178,29 +146,6 @@ fn gc_maybe_collect_with_root(value : Value) -> Unit {
   let _ = gc_root_push(value)
   gc_maybe_collect()
   gc_root_pop_to(base)
-}
-
-///|
-fn gc_maybe_collect_with_global(env : Env, value : Value) -> Unit {
-  let base = gc_root_depth()
-  let _ = gc_root_push(global_object_value(env))
-  let _ = gc_root_push(value)
-  gc_maybe_collect()
-  gc_root_pop_to(base)
-}
-
-///|
-#warnings("-unused_error_type")
-fn loop_gc_maybe(env : Env, value : Value, tick : Int) -> Int raise {
-  let next = tick + 1
-  if Int::land(next, 255) == 0 {
-    let _ = with_env_value(env, fn() raise {
-      gc_maybe_collect_with_global(env, value)
-      Undefined
-    })
-
-  }
-  next
 }
 
 ///|

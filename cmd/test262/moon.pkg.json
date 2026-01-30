@@ -3,6 +3,9 @@
   "import": [
     "moonbitlang/x/fs",
     "moonbitlang/x/path",
+    "moonbitlang/core/env",
+    "moonbitlang/core/encoding/utf8",
+    "moonbitlang/core/strconv",
     {
       "path": "Lampese/nocturnejs",
       "alias": "qjs"

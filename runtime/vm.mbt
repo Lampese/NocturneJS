@@ -34,21 +34,6 @@ pub struct Vm {
 } derive(Show)
 
 ///|
-priv suberror ReturnSignal {
-  ReturnSignal(Value)
-}
-
-///|
-priv suberror BreakSignal {
-  BreakSignal((String?, Value?))
-}
-
-///|
-priv suberror ContinueSignal {
-  ContinueSignal((String?, Value?))
-}
-
-///|
 priv suberror ThrowSignal {
   ThrowSignal(Value)
 }

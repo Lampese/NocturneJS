@@ -366,24 +366,6 @@ fn with_expr_pos(offset : Int, f : () -> Value raise) -> Value raise {
 }
 
 ///|
-fn with_expr_pos_call_ref(
-  offset : Int,
-  f : () -> (Value, Value) raise,
-) -> (Value, Value) raise {
-  push_expr_pos(offset)
-  try {
-    let result = f()
-    pop_expr_pos()
-    result
-  } catch {
-    err => {
-      pop_expr_pos()
-      raise err
-    }
-  }
-}
-
-///|
 fn current_function() -> FunctionValue? {
   let mut value : FunctionValue? = None
   current_function_stack_ref.update(fn(current) {

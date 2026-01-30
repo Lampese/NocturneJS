@@ -733,19 +733,3 @@ fn agent_local_clock_advance(agent_id : Int, delta_ms : Int64) -> Int64 {
   })
   next_value
 }
-
-///|
-fn agent_local_clock_advance_to(agent_id : Int, target : Int64) -> Int64 {
-  let mut next_value : Int64 = 0
-  agent_local_clock_ref.update(fn(table) {
-    let current = match table.get(agent_id) {
-      Some(value) => value
-      None => agent_clock_now()
-    }
-    let next = if target > current { target } else { current }
-    table.set(agent_id, next)
-    next_value = next
-    table
-  })
-  next_value
-}

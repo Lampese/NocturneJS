@@ -737,7 +737,7 @@ fn join_harness_path(harness_dir : String, name : String) -> String {
 fn read_text(path : String) -> Result[String, String] {
   try {
     let bytes = @fs.read_file_to_bytes(path)
-    Ok(@encoding/utf8.decode(bytes))
+    Ok(@utf8.decode(bytes))
   } catch {
     err => Err(err.to_string())
   }

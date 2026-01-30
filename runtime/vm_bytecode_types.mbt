@@ -161,11 +161,6 @@ struct BytecodeDebug {
   pc2line : Array[(Int, Int)]
 } derive(Show, Eq, ToJson)
 
-struct OptionalChainDef {
-  base : @engine.Expr
-  segments : Array[@engine.ChainSegment]
-} derive(Show, Eq, ToJson)
-
 struct TaggedTemplateDef {
   callee : @engine.Expr
   parts : @engine.TemplateParts
@@ -186,20 +181,10 @@ struct SuperMemberCallDef {
   args : Array[@engine.Expr]
 } derive(Show, Eq, ToJson)
 
-struct SuperCallDef {
-  args : Array[@engine.Expr]
-} derive(Show, Eq, ToJson)
-
 struct SuperUpdateDef {
   op : @engine.UpdateOp
   kind : @engine.UpdateKind
   key : @engine.MemberKey
-} derive(Show, Eq, ToJson)
-
-struct AssignOpDef {
-  op : @engine.BinaryOp
-  lhs : @engine.Expr
-  rhs : @engine.Expr
 } derive(Show, Eq, ToJson)
 
 struct SuperDeleteDef {
@@ -273,13 +258,10 @@ struct BytecodeFunction {
   cpool : Array[Value]
   func_pool : Array[@engine.FunctionDef]
   class_pool : Array[BytecodeClassDef]
-  optional_chain_pool : Array[OptionalChainDef]
   tagged_template_pool : Array[TaggedTemplateDef]
   super_member_pool : Array[SuperMemberDef]
   super_member_call_pool : Array[SuperMemberCallDef]
-  super_call_pool : Array[SuperCallDef]
   super_update_pool : Array[SuperUpdateDef]
-  assign_op_pool : Array[AssignOpDef]
   super_delete_pool : Array[SuperDeleteDef]
   assign_array_pool : Array[AssignArrayDef]
   assign_object_pool : Array[AssignObjectDef]
@@ -303,13 +285,10 @@ priv struct BytecodeBuilder {
   cpool : Array[Value]
   func_pool : Array[@engine.FunctionDef]
   class_pool : Array[BytecodeClassDef]
-  optional_chain_pool : Array[OptionalChainDef]
   tagged_template_pool : Array[TaggedTemplateDef]
   super_member_pool : Array[SuperMemberDef]
   super_member_call_pool : Array[SuperMemberCallDef]
-  super_call_pool : Array[SuperCallDef]
   super_update_pool : Array[SuperUpdateDef]
-  assign_op_pool : Array[AssignOpDef]
   super_delete_pool : Array[SuperDeleteDef]
   assign_array_pool : Array[AssignArrayDef]
   assign_object_pool : Array[AssignObjectDef]
@@ -341,13 +320,10 @@ fn bytecode_builder_new() -> BytecodeBuilder {
     cpool: [],
     func_pool: [],
     class_pool: [],
-    optional_chain_pool: [],
     tagged_template_pool: [],
     super_member_pool: [],
     super_member_call_pool: [],
-    super_call_pool: [],
     super_update_pool: [],
-    assign_op_pool: [],
     super_delete_pool: [],
     assign_array_pool: [],
     assign_object_pool: [],
@@ -402,17 +378,6 @@ fn bytecode_add_class(
 }
 
 ///|
-fn bytecode_add_optional_chain(
-  builder : BytecodeBuilder,
-  base : @engine.Expr,
-  segments : Array[@engine.ChainSegment],
-) -> Int {
-  let index = builder.optional_chain_pool.length()
-  builder.optional_chain_pool.push(OptionalChainDef::{ base, segments })
-  index
-}
-
-///|
 ///|
 fn bytecode_add_tagged_template(
   builder : BytecodeBuilder,
@@ -449,16 +414,6 @@ fn bytecode_add_super_member_call(
 }
 
 ///|
-fn bytecode_add_super_call(
-  builder : BytecodeBuilder,
-  args : Array[@engine.Expr],
-) -> Int {
-  let index = builder.super_call_pool.length()
-  builder.super_call_pool.push(SuperCallDef::{ args })
-  index
-}
-
-///|
 fn bytecode_add_super_update(
   builder : BytecodeBuilder,
   op : @engine.UpdateOp,
@@ -467,18 +422,6 @@ fn bytecode_add_super_update(
 ) -> Int {
   let index = builder.super_update_pool.length()
   builder.super_update_pool.push(SuperUpdateDef::{ op, kind, key })
-  index
-}
-
-///|
-fn bytecode_add_assign_op(
-  builder : BytecodeBuilder,
-  op : @engine.BinaryOp,
-  lhs : @engine.Expr,
-  rhs : @engine.Expr,
-) -> Int {
-  let index = builder.assign_op_pool.length()
-  builder.assign_op_pool.push(AssignOpDef::{ op, lhs, rhs })
   index
 }
 
@@ -743,13 +686,10 @@ fn bytecode_finish(
     cpool: builder.cpool,
     func_pool: builder.func_pool,
     class_pool: builder.class_pool,
-    optional_chain_pool: builder.optional_chain_pool,
     tagged_template_pool: builder.tagged_template_pool,
     super_member_pool: builder.super_member_pool,
     super_member_call_pool: builder.super_member_call_pool,
-    super_call_pool: builder.super_call_pool,
     super_update_pool: builder.super_update_pool,
-    assign_op_pool: builder.assign_op_pool,
     super_delete_pool: builder.super_delete_pool,
     assign_array_pool: builder.assign_array_pool,
     assign_object_pool: builder.assign_object_pool,
